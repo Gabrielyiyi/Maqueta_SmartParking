@@ -42,7 +42,17 @@ En la salida hay una columna solo con el RC522.
 
 La **caseta de acceso** tapa el ESP32 de acceso y su expansor. El **cuarto de control** tapa la protoboard del ESP32 de cajones. Los techos van sueltos o con imanes para poder abrirlos.
 
-## Medidas para construirla (1 unidad = 1 cm)
+## Planos para construirla
+
+**[Planos_SmartParking.pdf](planos/Planos_SmartParking.pdf)** (8 hojas, tamaño Carta): plano general 1:4, coordenadas de cada sensor, corte del sensor Hall, plantillas 1:1 de cajón, entrada y salida, frentes de las columnas y casetas. Imprime al 100 % y comprueba la barra de 10 cm.
+
+### Sensores Hall
+
+- **Cajones:** al centro del cajón, a 3.8 cm del tope (Y = 15.8 cm desde el fondo de la base).
+- **Plumas:** 5 cm después del brazo, al centro del carril.
+- **Imán en cada carro:** neodimio Ø 10 × 1–2 mm, a 3.8 cm de la defensa delantera, polo sur hacia abajo.
+
+## Medidas (1 unidad = 1 cm)
 
 | Pieza | Medida |
 |---|---|
@@ -51,10 +61,10 @@ La **caseta de acceso** tapa el ESP32 de acceso y su expansor. El **cuarto de co
 | Cajones | 6 de 7 × 11 cm |
 | Caseta de acceso | 7.4 × 9 cm, 7 cm de alto |
 | Cuarto de control | 18 × 6.8 cm, 7 cm de alto (cabe una protoboard de 16.5 × 5.5 cm) |
-| Pórtico del LCD | 12 cm de ancho × 12.8 cm de alto, caja de 10.2 × 5.4 cm |
-| Columna de acceso | 4.4 × 1.6 × 12 cm (OLED 0.96" + buzzer + RC522 vertical) |
-| Columna de salida | 4.4 × 1.6 × 8.4 cm (RC522) |
-| Plumas | 9 cm |
+| Pórtico del LCD | 11.4 cm entre postes × 12.8 cm de alto, caja de 10.2 × 5.4 × 2.5 cm |
+| Columna de acceso | 5.2 × 3 × 12 cm (OLED 0.96" + buzzer + RC522 vertical + servo) |
+| Columna de salida | 5.2 × 3 × 8.6 cm (RC522 + servo) |
+| Plumas | 7.4 cm (entrada), 7.8 cm (salida) |
 | Postes de luz | 9 cm |
 | Boyas | Ø 0.6 cm |
 | Carros | Escala 1:64 (tipo Hot Wheels) con un imán debajo |

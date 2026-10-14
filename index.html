@@ -206,11 +206,12 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); fo
           <dt>Pasto</dt><dd>Pasto sintético, fieltro verde o aserrín teñido.</dd>
           <dt>Postes de luz</dt><dd>9 cm, popote negro o alambre. Opcional: LED blanco + 220 Ω al riel de 5 V (no usa pines del ESP32).</dd>
           <dt>Árboles</dt><dd>5–7 cm: esponja verde sobre palillo de brocheta.</dd>
-          <dt>Plumas</dt><dd>Palito de paleta de 9 cm con franjas rojo/blanco, pegado al brazo del servo.</dd>
+          <dt>Plumas</dt><dd><b>7.4 cm</b> (entrada) y <b>7.8 cm</b> (salida), palito de paleta con franjas rojo/blanco. Sale de la cara de la columna; el servo va adentro.</dd>
           <dt>Boyas</dt><dd>Domos de <b>0.6 cm</b>: medias perlas o chinches doradas pintadas de amarillo. Dos filas antes y después del paso peatonal, una antes de cada pluma y una cada 5 cm en la línea central.</dd>
-          <dt>Letrero</dt><dd>Pórtico de <b>12 cm</b> de ancho y <b>12.8 cm</b> de alto sobre el carril de entrada. Caja de <b>10.2 × 5.4 cm</b> con el <b>LCD 16×2</b> (8 × 3.6 cm). Muestra los lugares libres desde la calle, antes de entrar.</dd>
-          <dt>Columna acceso</dt><dd><b>4.4 × 1.6 × 12 cm</b>, sobre un camellón de 2.6 × 4.4 cm del lado del conductor, a la altura de la ventana. Arriba: <b>OLED 0.96"</b> (cajón asignado) y <b>buzzer</b>; abajo: <b>RC522</b> en vertical (4 × 6 cm). Todo lo que el conductor necesita queda en un solo punto.</dd>
-          <dt>Columna salida</dt><dd><b>4.4 × 1.6 × 8.4 cm</b>, solo con el RC522.</dd>
+          <dt>Letrero</dt><dd>Pórtico de <b>11.4 cm</b> entre postes y <b>12.8 cm</b> de alto, sobre la guarnición. Caja de <b>10.2 × 5.4 × 2.5 cm</b> con el <b>LCD 16×2</b> (8 × 3.6 cm). Se ve desde la calle, antes de entrar.</dd>
+          <dt>Columna acceso</dt><dd><b>5.2 × 3 × 12 cm</b> dentro de la abertura de la entrada, del lado del conductor. Arriba: <b>OLED 0.96"</b> y <b>buzzer</b>; abajo: <b>RC522</b> en vertical detrás del frente (lee a través de 5 mm de foamboard). El servo de la pluma va en el extremo interior.</dd>
+          <dt>Columna salida</dt><dd><b>5.2 × 3 × 8.6 cm</b>, con el RC522 y el servo de la pluma de salida.</dd>
+          <dt>Sensores Hall</dt><dd>Cajón: al centro, a <b>3.8 cm</b> del tope. Plumas: <b>5 cm</b> después del brazo, en el centro del carril. Imán bajo cada carro a 3.8 cm de la defensa delantera, polo sur abajo. Las coordenadas exactas están en los planos.</dd>
           <dt>Cableado</dt><dd>Haz perforaciones de 5 mm junto a cada poste y pasa los cables por debajo de la base hasta la caseta de acceso.</dd>
           <dt>Marco LED</dt><dd>Contorno de cada cajón con tira LED delgada o pintura fluorescente verde. Luce mucho con la luz apagada.</dd>
           <dt>Bandera</dt><dd>Mástil de 13 cm (palito de brocheta) con el logo del proyecto impreso.</dd>
@@ -294,7 +295,9 @@ const P = 'estacionamiento/esp32', PC = 'estacionamiento/cajones';
 const T_ESPERA = 6000;    // firmware: 15000 ms (acortado para la demo)
 const T_LIBRE = 1000, T_OLED = 6000;
 const SLOT_X = [-17.5, -10.5, -3.5, 3.5, 10.5, 17.5], SLOT_Z = -11.5;
-const ENT_X = -14, SAL_X = 14, FENCE_Z = 8.4;
+const ENT_X = -12.3, SAL_X = 12.5, FENCE_Z = 8.4;
+const ENT_STOP = 6.7, SAL_STOP = 4.7;   // centro del carro detenido frente a cada pluma
+const SLOT_HALL_Z = -12.2;              // sensor Hall del cajón: 3.8 cm detrás del tope (Y = 15.8 cm en el plano)
 const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 // ======================= ESCENA =======================
@@ -385,7 +388,7 @@ function floorText(txt, x, z, rot) {
   const pl = new THREE.Mesh(new THREE.PlaneGeometry(8, 2), new THREE.MeshStandardMaterial({ map: canvasTex(cv), transparent: true }));
   pl.rotation.x = -Math.PI / 2; pl.rotation.z = rot || 0; pl.position.set(x, 0.24, z); scene.add(pl);
 }
-floorText('ENTRADA', ENT_X, 4.5, 0); floorText('SALIDA', SAL_X, 1.5, Math.PI);
+floorText('ENTRADA', ENT_X, 1.4, 0); floorText('SALIDA', SAL_X, 1.0, Math.PI);
 
 // Banqueta / cerca con huecos para entrada y salida
 const curb = M(0x9aa3ad, { roughness: 0.85 });
@@ -413,8 +416,6 @@ floorArrow(-3, 1.6); floorArrow(5, 1.6);
 const boyaPos = [];
 for (const bx of [-5.2, 5.2]) for (let z = 9.4; z <= 17.5; z += 0.82) { boyaPos.push([bx - 0.42, z]); boyaPos.push([bx + 0.42, z + 0.41]); }   // reductores junto al paso peatonal
 for (let x = -33.5; x < 37; x += 5) if (Math.abs(x) > 7) boyaPos.push([x, 13.4]);                                                    // línea central
-for (let x = -16.6; x <= -11.4; x += 0.87) boyaPos.push([x, 6.2]);                                                                  // antes de la pluma de entrada
-for (let x = 11.4; x <= 16.6; x += 0.87) boyaPos.push([x, 5.4]);                                                                    // antes de la pluma de salida
 for (let z = -4.5; z <= 4.5; z += 1.5) boyaPos.push([0.6, z]);                                                                       // reductor en el pasillo del lote
 const boyaMat = new THREE.MeshStandardMaterial({ color: 0xf5b301, metalness: 0.55, roughness: 0.3, emissive: 0xffc533, emissiveIntensity: 0.05 });
 const boyas = new THREE.InstancedMesh(new THREE.SphereGeometry(0.3, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2), boyaMat, boyaPos.length);
@@ -422,7 +423,7 @@ const bm = new THREE.Matrix4(), bs = new THREE.Vector3(1, 0.65, 1), bq = new THR
 boyaPos.forEach(([x, z], i) => { bm.compose(new THREE.Vector3(x, 0.2, z), bq, bs); boyas.setMatrixAt(i, bm); });
 boyas.receiveShadow = true; scene.add(boyas);
 const amarillo = M(0xf5b301, { roughness: 0.6 });
-SLOT_X.forEach(x => box(3, 0.3, 0.42, amarillo, x, 0.35, -15.95));
+SLOT_X.forEach(x => box(3, 0.3, 0.5, amarillo, x, 0.35, -16.25));   // tope: de 0.5 a 1.0 cm de la línea del fondo
 
 // Árboles (frondosos y pinos) y arbustos
 const trunkMat = M(0x6b4a2f, { roughness: 0.9 });
@@ -484,7 +485,7 @@ function signPost(x, z, rotY, tex, size, height) {
   const back = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.MeshStandardMaterial({ map: tex, color: 0x000000, emissive: 0x6b7380, transparent: true, alphaTest: 0.4 }));
   back.position.set(0, height, 0.1); back.rotation.y = Math.PI; g.add(back);
 }
-signPost(9.6, 7.6, Math.PI, texAlto, 1.9, 4.2);
+signPost(7.6, 7.9, Math.PI, texAlto, 1.9, 4.2);
 signPost(-29, -9, Math.PI / 2, texVel, 1.7, 4.2);
 
 // Letrero monumento, banca y bote de basura sobre el pasto frontal
@@ -599,20 +600,21 @@ function hallChip(x, z) {
   const ring = new THREE.Mesh(new THREE.RingGeometry(0.7, 0.95, 32), new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0, side: THREE.DoubleSide }));
   ring.rotation.x = -Math.PI / 2; ring.position.y = 0.08; g.add(ring); g.userData.ring = ring; return g;
 }
-function makeGate(name, postX, dir) {
-  const g = { name, postX, dir, laneX: postX + dir * 4.6, angle: 0, target: 0, estado: 'CERRADA', t: 0, visto: false, tHall: 0, hall: false };
-  const yellow = M(0xf5b301, { roughness: 0.5 });
-  box(1.2, 3.0, 1.2, yellow, postX, 1.5, FENCE_Z);
-  box(1.3, 1.6, 2.2, M(0x2563eb, { roughness: 0.5 }), postX, 2.5, FENCE_Z + 1.05);       // servo
-  const pivot = new THREE.Group(); pivot.position.set(postX, 2.6, FENCE_Z + 1.4); scene.add(pivot);
-  const arm = new THREE.Mesh(new THREE.BoxGeometry(9, 0.32, 0.32), new THREE.MeshStandardMaterial({ map: stripeTex, roughness: 0.5 }));
-  arm.position.x = dir * 4.5; arm.castShadow = true; pivot.add(arm);
+// La pluma sale de la cara de la columna (el servo va dentro). El sensor Hall de la pluma está
+// 5 cm después del brazo, en el sentido de avance: cuando el imán (a 3.8 cm de la defensa) pasa
+// sobre él, la parte trasera del carro ya cruzó la pluma y ésta puede bajar sin golpearlo.
+function makeGate(name, pivotX, pivotZ, dir, len, hallX, hallZ) {
+  const g = { name, dir, hallX, hallZ, angle: 0, target: 0, estado: 'CERRADA', t: 0, visto: false, tHall: 0, hall: false };
+  const pivot = new THREE.Group(); pivot.position.set(pivotX + dir * 0.2, 2.6, pivotZ); scene.add(pivot);
+  box(0.4, 0.6, 0.6, M(0x2563eb, { roughness: 0.5 }), 0, 0, 0, pivot);                  // corona del servo
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(len, 0.32, 0.32), new THREE.MeshStandardMaterial({ map: stripeTex, roughness: 0.5 }));
+  arm.position.x = dir * len / 2; arm.castShadow = true; pivot.add(arm);
   g.pivot = pivot;
-  g.ledV = ledMesh(0x22c55e, postX, 3.35, FENCE_Z + 0.62); g.ledR = ledMesh(0xef4444, postX, 2.75, FENCE_Z + 0.62);
-  g.chip = hallChip(postX + dir * 4.6, FENCE_Z);
+  g.ledV = ledMesh(0x22c55e, pivotX + dir * 0.15, 4.3, pivotZ); g.ledR = ledMesh(0xef4444, pivotX + dir * 0.15, 3.6, pivotZ);
+  g.chip = hallChip(hallX, hallZ);
   return g;
 }
-const gates = { entrada: makeGate('entrada', -18.6, 1), salida: makeGate('salida', 18.6, -1) };
+const gates = { entrada: makeGate('entrada', -16.0, 3.7, 1, 7.4, ENT_X, -1.3), salida: makeGate('salida', 16.4, 7.9, -1, 7.8, SAL_X, 12.9) };
 
 // ======================= ACCESO: PÓRTICO CON LCD + COLUMNAS CON OLED / RFID =======================
 // Lógica de la entrada (de afuera hacia adentro): 1) letrero LCD en el pórtico, visible desde la calle;
@@ -639,12 +641,12 @@ function textPlate(txt, w, h, sub) {
   });
   return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: canvasTex(cv), emissive: 0xffffff, emissiveMap: canvasTex(cv), emissiveIntensity: 0.25, roughness: 0.5 }));
 }
-function rfidPlate(g, y, zf) {   // RC522 en vertical: 4 × 6 cm
-  box(4.2, 6.3, 0.16, frameMat, 0, y, zf + 0.08, g);
+function rfidPlate(g, x, y, zf) {   // RC522 en vertical: 4 × 6 cm
+  box(4.2, 6.3, 0.16, frameMat, x, y, zf + 0.08, g);
   const plate = new THREE.Mesh(new THREE.BoxGeometry(3.9, 5.9, 0.1), [M(0x1f5fbf), M(0x1f5fbf), M(0x1f5fbf), M(0x1f5fbf), new THREE.MeshStandardMaterial({ map: coilTex, roughness: 0.5 }), M(0x1f5fbf)]);
-  plate.position.set(0, y, zf + 0.2); g.add(plate);
+  plate.position.set(x, y, zf + 0.2); g.add(plate);
   const glow = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 6.3), new THREE.MeshBasicMaterial({ color: 0xf5b301, transparent: true, opacity: 0, depthWrite: false }));
-  glow.position.set(0, y, zf + 0.27); g.add(glow);
+  glow.position.set(x, y, zf + 0.27); g.add(glow);
   return glow;
 }
 function island(x, z, w, d, y) {   // camellón de concreto con orilla amarilla
@@ -654,9 +656,9 @@ function island(x, z, w, d, y) {   // camellón de concreto con orilla amarilla
 
 // 1) Pórtico de entrada con el letrero LCD 16×2 (mira hacia la calle)
 const portico = (function () {
-  const g = new THREE.Group(); g.position.set(-14, 0.2, 7.2); scene.add(g);
+  const g = new THREE.Group(); g.position.set(-13.9, 0.2, 8.4); scene.add(g);
   const steel = M(0x39404a, { metalness: 0.5, roughness: 0.4 });
-  box(0.7, 12.4, 0.7, steel, -5.6, 6.2, 0, g); box(0.7, 12.4, 0.7, steel, 5.6, 6.2, 0, g);
+  box(0.7, 12.4, 0.7, steel, -5.7, 6.2, 0, g); box(0.7, 12.4, 0.7, steel, 5.7, 6.2, 0, g);
   box(12, 0.8, 0.8, steel, 0, 12.4, 0, g);
   box(10.2, 5.4, 1.0, colMat, 0, 9.3, 0, g);                       // caja del letrero
   box(10.4, 0.35, 1.1, amarillo, 0, 12.0, 0, g);
@@ -670,27 +672,29 @@ const portico = (function () {
 })();
 
 // 2) Columna de acceso del lado del conductor: OLED + buzzer + RFID
-island(-17.1, 12.4, 2.6, 4.4, 0.2);
 let kioskBuzzer;
+// Columna de 5.2 × 3 cm (foamboard de 5 mm: interior 4.2 × 2 cm, cabe el RC522 de 4 × 6 cm y los conectores).
+// Dentro de la abertura del lote, del lado del conductor. Lleva el servo de la pluma en un extremo.
 function makeColumn(x, z, rotY, h, title, conOled) {
-  const g = new THREE.Group(); g.position.set(x, 0.6, z); g.rotation.y = rotY; scene.add(g);
-  box(4.4, h, 1.6, colMat, 0, h / 2, 0, g);
-  box(4.6, 0.45, 1.8, amarillo, 0, h + 0.22, 0, g);
-  const t = textPlate(title, 4.1, 1.05); t.position.set(0, h - 0.75, 0.81); g.add(t);
-  let glowY = 3.7;
+  const g = new THREE.Group(); g.position.set(x, 0.2, z); g.rotation.y = rotY; scene.add(g);
+  box(5.6, 0.3, 3.4, M(0x6b7380), 0, 0.15, 0, g);
+  const top = 0.3 + h;
+  box(5.2, h, 3.0, colMat, 0, 0.3 + h / 2, 0, g);
+  box(5.4, 0.45, 3.2, amarillo, 0, top + 0.22, 0, g);
+  const t = textPlate(title, 4.9, 1.05); t.position.set(0, top - 0.75, 1.51); g.add(t);
   if (conOled) {
-    box(2.7, 2.8, 0.12, M(0x0e3d78), -0.65, h - 2.95, 0.84, g);   // PCB OLED 0.96" (2.7 × 2.8 cm)
+    box(2.7, 2.8, 0.12, M(0x0e3d78), -1.2, top - 2.95, 1.54, g);   // PCB OLED 0.96" (2.7 × 2.8 cm)
     const ol = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 1.15), new THREE.MeshBasicMaterial({ map: oledTex, toneMapped: false }));
-    ol.position.set(-0.65, h - 2.9, 0.91); g.add(ol);
-    const bz = cyl(0.6, 0.5, M(0x111111), 1.4, h - 2.95, 0.95, g, 18); bz.rotation.x = Math.PI / 2;   // buzzer
+    ol.position.set(-1.2, top - 2.9, 1.61); g.add(ol);
+    const bz = cyl(0.6, 0.5, M(0x111111), 0.9, top - 2.95, 1.65, g, 18); bz.rotation.x = Math.PI / 2;   // buzzer
     kioskBuzzer = bz;
   }
-  const glow = rfidPlate(g, glowY, 0.8);
+  const glow = rfidPlate(g, -0.5, 0.3 + 3.9, 1.5);
   return { group: g, glow };
 }
 const readers = {
-  entrada: makeColumn(-17.3, 12.4, Math.PI / 2, 12, 'ACCESO', true),
-  salida: (island(17.1, 4.6, 2.6, 4.4, 0.2), makeColumn(17.3, 4.6, -Math.PI / 2, 8.4, 'SALIDA', false))
+  entrada: makeColumn(-17.5, 5.8, Math.PI / 2, 12, 'ACCESO', true),
+  salida: makeColumn(17.9, 5.8, -Math.PI / 2, 8.6, 'SALIDA', false)
 };
 
 // ======================= ELECTRÓNICA =======================
@@ -818,7 +822,7 @@ const slots = SLOT_X.map((x, i) => {
   const ledV = ledMesh(0x22c55e, x + 2.6, 2.6, -16.3), ledR = ledMesh(0xef4444, x + 2.6, 2.0, -16.3);
   const frame = new THREE.Mesh(new THREE.PlaneGeometry(6.3, 10.5), new THREE.MeshBasicMaterial({ map: frameTex, color: 0x22c55e, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending }));
   frame.rotation.x = -Math.PI / 2; frame.position.set(x, 0.27, SLOT_Z); scene.add(frame);
-  return { n: i + 1, x, ledV, ledR, chip: hallChip(x, SLOT_Z), ocupado: false, post, frame };
+  return { n: i + 1, x, ledV, ledR, chip: hallChip(x, SLOT_HALL_Z), ocupado: false, post, frame };
 });
 function paintFrame(s) { s.frame.material.color.set(s.ocupado ? 0xef4444 : 0x22c55e); }
 
@@ -835,17 +839,17 @@ function wire(pts, color, r) {
   m.castShadow = true; wires.add(m); return m;
 }
 const y0 = 0.32;
-wire([[-34.2, 1.2, 3.8], [-34.2, y0, 5.5], [-31, y0, 6.6], [-20.1, y0, 6.6], [-19.8, 1.4, 7.0]], 0x2ecc71);         // I2C -> LCD del pórtico
-wire([[-33.9, 1.2, 3.8], [-33.8, y0, 5.8], [-31, y0, 7.0], [-20.6, y0, 7.0], [-20.6, y0, 10.6], [-18.6, y0, 12.0], [-17.4, 1.2, 12.0]], 0x2ecc71);   // I2C -> OLED de la columna
-wire([[-33.6, 1.2, 3.8], [-33.4, y0, 6.1], [-31, y0, 7.3], [-20.9, y0, 7.3], [-20.9, y0, 10.9], [-18.6, y0, 12.8], [-17.4, 1.2, 12.8]], 0x8e7cf0);   // RFID entrada (SPI)
-wire([[-33, 1.2, 3.8], [-32.6, y0, 6.4], [-30, y0, 9.1], [-18.6, y0, 9.1], [-18.6, 2.4, 9.5]], 0xf5b301);         // servo/LEDs entrada
-wire([[-32.6, 1.2, 3.8], [-32, y0, 6.8], [-29.6, y0, 9.35], [18.6, y0, 9.35], [18.6, 2.4, 9.5]], 0xf39c12);       // servo/LEDs salida
-wire([[-32.3, 1.2, 3.8], [-31.6, y0, 7.1], [-29.2, y0, 9.6], [20.2, y0, 9.6], [20.2, y0, 7.6], [18.6, y0, 4.6], [17.4, 1.2, 4.6]], 0x8e7cf0);  // RFID salida
+wire([[-34.2, 1.2, 3.8], [-34.2, y0, 5.5], [-31, y0, 7.6], [-20.2, y0, 7.6], [-19.6, 1.4, 8.3]], 0x2ecc71);         // I2C -> LCD del pórtico
+wire([[-33.9, 1.2, 3.8], [-33.8, y0, 5.8], [-31, y0, 7.0], [-19.6, y0, 7.0], [-19.1, 1.2, 6.6]], 0x2ecc71);         // I2C -> OLED de la columna
+wire([[-33.6, 1.2, 3.8], [-33.4, y0, 6.1], [-31, y0, 6.4], [-19.6, y0, 6.4], [-19.1, 1.2, 5.8]], 0x8e7cf0);         // RFID entrada (SPI)
+wire([[-33, 1.2, 3.8], [-32.6, y0, 5.2], [-30, y0, 5.0], [-19.6, y0, 4.6], [-19.1, 1.2, 4.2]], 0xf5b301);           // servo/LEDs entrada
+wire([[-32.6, 1.2, 3.8], [-32, y0, 6.8], [-29.6, y0, 9.35], [19.9, y0, 9.35], [19.9, y0, 7.6], [19.4, 1.2, 7.4]], 0xf39c12);   // servo/LEDs salida
+wire([[-32.3, 1.2, 3.8], [-31.6, y0, 7.1], [-29.2, y0, 9.6], [20.2, y0, 9.6], [20.2, y0, 5.4], [19.4, 1.2, 5.3]], 0x8e7cf0);  // RFID salida
 wire([[-34.2, 1.6, -5.7], [-34.2, y0, -4.5], [-35.8, y0, -1], [-35.8, y0, 3], [-35.8, 0.9, 3.6]], 0x111111, 0.16);   // fuente 9 V -> jack DC
 slots.forEach(s => {
   const sx = -1.3 + s.n * 0.37;   // todos salen por la ranura del cuarto de control
   wire([[-0.6 + s.n * 0.2, 1.1, -22.2], [sx, 0.55, -21.3], [sx * 1.6, y0 + 0.5, -20.5], [s.x + 2.4, y0, -19.6], [s.x + 2.6, y0, -17.2], [s.x + 2.6, 1.6, -16.8]], 0x22c55e, 0.07);
-  wire([[-0.6 + s.n * 0.2, 1.1, -22.2], [sx + 0.1, 0.5, -21.3], [sx * 1.6 + 0.15, y0 + 0.5, -20.5], [s.x + 2.2, y0, -19.3], [s.x + 2.2, y0, -16.0], [s.x + 1, y0, -12], [s.x, 0.3, SLOT_Z]], 0x3b82f6, 0.06);
+  wire([[-0.6 + s.n * 0.2, 1.1, -22.2], [sx + 0.1, 0.5, -21.3], [sx * 1.6 + 0.15, y0 + 0.5, -20.5], [s.x + 2.2, y0, -19.3], [s.x + 2.2, y0, -16.0], [s.x + 1, y0, -13], [s.x, 0.3, SLOT_HALL_Z]], 0x3b82f6, 0.06);
 });
 wire([[6.5, 1.2, -25.4], [4.5, 0.6, -25], [1.8, 1.0, -24.3]], 0xf2f2f2, 0.1);   // USB del cargador
 
@@ -1034,7 +1038,7 @@ function pulse(chip, on) { chip.userData.ring.material.opacity = on ? 0.9 : 0; }
 function updateSensors(t) {
   // Cajones: ESP32 de cajones
   slots.forEach(s => {
-    const o = carsNear(s.x, SLOT_Z, 1.0, 1.0);
+    const o = carsNear(s.x, SLOT_HALL_Z, 1.0, 1.0);
     if (o !== s.ocupado) {
       s.ocupado = o; setLed(s.ledV, !o); setLed(s.ledR, o); paintFrame(s); drawTotem(); pulse(s.chip, true); setTimeout(() => pulse(s.chip, false), 700);
       publish('cajones', PC + '/' + s.n, o ? 'ocupado' : 'libre', 'cajon');
@@ -1043,7 +1047,7 @@ function updateSensors(t) {
   });
   // Plumas: firmware del ESP32 de acceso
   Object.values(gates).forEach(g => {
-    const h = carsNear(g.laneX, FENCE_Z, 2.2, 3.4);
+    const h = carsNear(g.hallX, g.hallZ, 2.2, 1.6);
     if (h !== g.hall) { g.hall = h; pulse(g.chip, h); publish('acceso', P + '/' + g.name + '/vehiculo', h ? 'presente' : 'libre', 'pluma'); }
     if (g.estado === 'ABIERTA') {
       if (h) { g.visto = true; g.tHall = t; }
@@ -1121,9 +1125,9 @@ async function runQueue() {
 
 async function llegaCarro(role) {
   const car = makeCar(role); cars.push(car);
-  placeCar(car, -44, 16.2, Math.PI / 2);
+  placeCar(car, -44, 15.6, Math.PI / 2);
   step(1, 'Llega un carro de ' + ROLES[role].label.toLowerCase(), 'Se detiene frente a la pluma de entrada.');
-  await drive(car, [[-44, 16.2], [-26, 16.2], [-18, 16.2], [-14.6, 15.2], [ENT_X, 12.7]], { speed: 10 });
+  await drive(car, [[-44, 15.6], [-24, 15.6], [-15.5, 14.6], [ENT_X, 11.2], [ENT_X, ENT_STOP]], { speed: 10 });
   await wait(300); scan(readers.entrada);
   const r = ROLES[role];
   const rolFw = role === 'DESCONOCIDO' ? null : role;
@@ -1135,8 +1139,8 @@ async function llegaCarro(role) {
     if (rolFw) { oledMsg('SIN', 'CAJONES'); step(2, 'Tarjeta de ' + r.label.toLowerCase() + ' válida, pero no hay cajón libre para ese tipo', 'La OLED muestra "SIN CAJONES", suena el pitido de error y la pluma no se abre.'); }
     else { oledMsg('ACCESO', 'DENEGADO'); step(2, 'Tarjeta no registrada: UID ' + r.uid, 'La OLED muestra "ACCESO DENEGADO" y la pluma no se abre.'); }
     await wait(1800);
-    await drive(car, [[ENT_X, 12.7], [-14.1, 14.6], [-15.4, 16.3], [-19.5, 16.5]], { reverse: true, speed: 5 });
-    await drive(car, [[-19.5, 16.5], [-8, 16.2], [12, 15.6], [46, 15.4]], { speed: 11 });
+    await drive(car, [[ENT_X, ENT_STOP], [ENT_X, 11.5], [-13.8, 14.8], [-18.5, 16.3]], { reverse: true, speed: 5 });
+    await drive(car, [[-18.5, 16.3], [-8, 16.3], [12, 16.2], [46, 16.2]], { speed: 11 });
     removeCar(car); step('·', 'El carro se retira sin entrar', 'Prueba con otro tipo de usuario.');
     return;
   }
@@ -1148,9 +1152,9 @@ async function llegaCarro(role) {
   await until(() => gates.entrada.angle > 0.92);
   step(3, 'El servo levanta la pluma de entrada', 'El sensor Hall bajo la pluma la mantiene arriba mientras el carro pasa.');
   const xc = SLOT_X[cajon - 1];
-  const path = [[ENT_X, 12.7], [ENT_X, 6], [ENT_X, 2.5]];
-  if (Math.abs(xc - ENT_X) < 6) path.push([xc, -2.5]);
-  else path.push([-10, 0.6], [xc - 4.5, 0.4], [xc - 0.4, -3.2]);
+  const path = [[ENT_X, ENT_STOP], [ENT_X, 1.5], [ENT_X, -1.0]];
+  if (Math.abs(xc - ENT_X) < 6) path.push([xc, -3.2]);
+  else path.push([ENT_X + 3, -2.6], [xc - 4.5, -2.4], [xc - 0.4, -4.0]);
   path.push([xc, -6.5], [xc, SLOT_Z]);
   await drive(car, path, { speed: 8 });
   await wait(1600);
@@ -1165,13 +1169,13 @@ async function saleCarro(n) {
   step(1, 'El carro del cajón ' + n + ' sale en reversa', 'Al alejarse del sensor Hall, el LED vuelve a verde y se publica "libre".');
   await drive(car, [[xc, SLOT_Z], [xc, -6], [xc + (xc < SAL_X ? 1.5 : -1.5), -2.6]], { reverse: true, speed: 5 });
   const p = car.group.position;
-  await drive(car, [[p.x, p.z], [xc < SAL_X ? xc - 1 : xc + 1, -0.6], [SAL_X - 3, 0.2], [SAL_X, 2.6], [SAL_X, 4.2]], { speed: 7 });
+  await drive(car, [[p.x, p.z], [xc < SAL_X ? xc - 1 : xc + 1, 1.2], [SAL_X - 3, 1.8], [SAL_X, 3.2], [SAL_X, SAL_STOP]], { speed: 7 });
   await wait(300); scan(readers.salida);
   publish('acceso', P + '/salida/acceso', JSON.stringify({ uid: ROLES[car.role].uid, rol: car.role, concedido: true }), 'acceso');
   step(3, 'Lectura en la salida: tarjeta de ' + ROLES[car.role].label.toLowerCase(), 'En la salida basta con que la tarjeta esté registrada.');
   abrirPluma(gates.salida);
   await until(() => gates.salida.angle > 0.92);
-  await drive(car, [[SAL_X, 4.2], [SAL_X, 9], [SAL_X + 1.5, 12.4], [20, 13.2], [46, 13.2]], { speed: 9 });
+  await drive(car, [[SAL_X, SAL_STOP], [SAL_X, 10], [SAL_X + 1.5, 12.8], [20, 13.4], [46, 13.4]], { speed: 9 });
   removeCar(car);
   step(6, 'El carro salió y la pluma de salida bajó', 'Cajón ' + n + ' libre otra vez.');
 }
@@ -1261,17 +1265,19 @@ const LABELS = [
   ['Caseta 7.4 × 9 × 7 cm', new THREE.Vector3(-34.6, 8.2, 5.1), 'dim'],
   ['Cuarto de control 18 × 6.8 × 7 cm', new THREE.Vector3(0, 8.2, -21), 'dim'],
   ['Calle 9 cm', new THREE.Vector3(-30, 0.6, 13.4), 'dim'],
-  ['Pluma 9 cm', new THREE.Vector3(-11, 3.4, 9.8), 'dim'],
-  ['Pórtico 12 × 12.8 cm', new THREE.Vector3(-8.4, 7, 7.2), 'dim'],
-  ['Columna 4.4 × 1.6 × 12 cm', new THREE.Vector3(-17.3, 7, 14.8), 'dim'],
+  ['Pluma 7.4 cm', new THREE.Vector3(-12, 3.4, 3.7), 'dim'],
+  ['Hall a 5 cm de la pluma', new THREE.Vector3(-12.3, 1.0, -1.3), 'dim'],
+  ['Pórtico 11.4 × 12.8 cm', new THREE.Vector3(-8.2, 7, 8.4), 'dim'],
+  ['Columna 5.2 × 3 × 12 cm', new THREE.Vector3(-17.5, 7, 9.2), 'dim'],
   ['Boyas Ø 0.6 cm', new THREE.Vector3(-5.2, 0.8, 16.5), 'dim'],
   ['Poste 9 cm', new THREE.Vector3(-6, 9.6, 18.9), 'dim'],
   ['Árbol 5–7 cm', new THREE.Vector3(31, 6.8, 21), 'dim'],
   ['Lote 60 × 28.6 cm', new THREE.Vector3(22, 0.6, -2), 'dim'],
-  ['Letrero: LCD 16×2', new THREE.Vector3(-14, 13.6, 7.2), 'hw'],
-  ['Columna: OLED + buzzer + RFID', new THREE.Vector3(-17.3, 13.8, 12.4), 'hw'],
-  ['Servo + pluma', new THREE.Vector3(-18.6, 4.4, 9.4), 'hw'],
-  ['Columna de salida: RFID', new THREE.Vector3(17.3, 10.2, 4.6), 'hw'],
+  ['Letrero: LCD 16×2', new THREE.Vector3(-13.9, 13.6, 8.4), 'hw'],
+  ['Columna: OLED + buzzer + RFID + servo', new THREE.Vector3(-17.5, 13.9, 5.8), 'hw'],
+  ['Hall H-E (pluma entrada)', new THREE.Vector3(-12.3, 1.4, -1.3), 'hw'],
+  ['Hall H-S (pluma salida)', new THREE.Vector3(12.5, 1.4, 12.9), 'hw'],
+  ['Columna de salida: RFID + servo', new THREE.Vector3(17.9, 10.4, 5.8), 'hw'],
   ['Cuarto de control · ESP32 de cajones', new THREE.Vector3(0, 10.6, -24.4), 'hw'],
   ['Sensor Hall + LEDs', new THREE.Vector3(SLOT_X[5] + 2.6, 3.4, -16.6), 'hw'],
   ['Broker MQTT', new THREE.Vector3(0, 25.2, -14), 'net'],
@@ -1314,7 +1320,7 @@ function updatePresent(t) {
 // Vistas de cámara
 const VIEWS = {
   general: { pos: [0, 50, 68], tgt: [0, 2, -3] },
-  entrada: { pos: [4, 16, 34], tgt: [-16, 6, 9] },
+  entrada: { pos: [6, 17, 30], tgt: [-14, 4, 4] },
   cajones: { pos: [4, 22, 10], tgt: [0, 0, -15] },
   control: { pos: [22, 40, 30], tgt: [-16, 3, -10] },
   red: { pos: [30, 30, 46], tgt: [0, 10, -8] }
@@ -1347,7 +1353,7 @@ function start() {
   drawLCD(); oledEspera(); drawNodeRed(); drawTotem(); resize(); setView('general', true);
   let last = now();
   renderer.setAnimationLoop(() => {
-    const t = now(), dt = Math.min(0.05, (t - last) / 1000); last = t;
+    const t = now(), dt = Math.min(0.1, (t - last) / 1000); last = t;
     updateTweens(t); updateSensors(t);
     Object.values(gates).forEach(g => { g.angle += Math.sign(g.target - g.angle) * Math.min(Math.abs(g.target - g.angle), dt * 1.6); g.pivot.rotation.z = g.dir * g.angle * 1.4; });
     for (let i = packets.length - 1; i >= 0; i--) {
