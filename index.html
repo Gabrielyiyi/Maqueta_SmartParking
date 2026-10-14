@@ -1,0 +1,1373 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Maqueta Smart Parking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=VT323&display=swap">
+<style>
+/* Layout: escena 3D a pantalla completa con panel de control a la derecha (abajo en celular). Un solo look oscuro, de maqueta iluminada. */
+:root {
+  --bg: #0f1419;
+  --panel: #161d25;
+  --panel-2: #1c2530;
+  --line: #2a3542;
+  --ink: #e7ecf1;
+  --muted: #8c9aab;
+  --accent: #f5b301;   /* amarillo de señalización vial */
+  --ok: #34d399;
+  --bad: #f87171;
+  --warn: #fbbf24;
+  --info: #60a5fa;
+  --maestro: #8b8cf8;
+  --alumno: #38bdf8;
+  --hibrido: #fb923c;
+  --font-ui: 'Saira Semi Condensed', 'Arial Narrow', 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', Consolas, 'Courier New', monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 15px; overflow: hidden; }
+.app { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 380px; }
+.stage { position: relative; min-width: 0; overflow: hidden; }
+#scene { position: absolute; inset: 0; }
+#scene canvas { display: block; }
+.title { position: absolute; left: 20px; top: 16px; pointer-events: none; }
+.title .eyebrow { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+.title h1 { margin: 2px 0 0; font-size: 30px; font-weight: 700; line-height: 1.05; text-wrap: balance; }
+.title p { margin: 4px 0 0; color: var(--muted); font-size: 14px; max-width: 46ch; }
+.step { position: absolute; left: 20px; right: 20px; bottom: 18px; display: flex; gap: 12px; align-items: center;
+        background: color-mix(in srgb, var(--panel) 88%, transparent); border: 1px solid var(--line); border-radius: 10px;
+        padding: 12px 16px; max-width: 760px; backdrop-filter: blur(6px); }
+.step .n { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--accent);
+           color: #1b1500; font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; }
+.step .t { font-size: 16px; line-height: 1.3; min-width: 0; }
+.step .t small { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.views { position: absolute; right: 16px; top: 16px; display: flex; gap: 4px; background: var(--panel); border: 1px solid var(--line);
+         border-radius: 9px; padding: 4px; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100% - 32px); }
+.views button { border: 0; background: transparent; color: var(--muted); font: 600 13px var(--font-ui); padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+.views button[aria-pressed="true"] { background: var(--panel-2); color: var(--ink); }
+.labels { position: absolute; inset: 0; pointer-events: none; }
+.lbl { position: absolute; left: 0; top: 0; will-change: transform; white-space: nowrap; font-size: 12px; font-weight: 600;
+       padding: 3px 8px; border-radius: 99px; background: rgba(15, 20, 25, 0.82); border: 1px solid var(--line); color: var(--ink); }
+.lbl::after { content: ''; position: absolute; left: 50%; top: 100%; width: 1px; height: 10px; background: var(--line); }
+.lbl.hw { border-color: #3b4b5e; }
+.lbl.net { border-color: var(--info); color: #cfe3ff; }
+.labels[hidden] { display: none; }
+
+.panel { background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; display: flex; flex-direction: column; gap: 18px; padding: 18px 18px 24px; min-width: 0; }
+.panel h2 { margin: 0 0 8px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; display: flex; justify-content: space-between; }
+.panel h2 span { letter-spacing: 0; text-transform: none; color: var(--accent); font-weight: 500; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.btn { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--ink);
+       font: 600 14px var(--font-ui); padding: 10px 12px; border-radius: 8px; cursor: pointer; text-align: left; transition: border-color .15s, background .15s; }
+.btn:hover { border-color: #3d4d60; background: #212c39; }
+.btn:focus-visible, .views button:focus-visible, .chip:focus-visible, .tg input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn .dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.btn small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--panel-2); color: var(--ink); font: 600 13px var(--font-ui); border-radius: 99px; padding: 6px 12px; cursor: pointer; }
+.chip:hover { border-color: var(--bad); }
+.chip .k { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; }
+.muted { color: var(--muted); font-size: 13px; }
+.toggles { display: flex; flex-wrap: wrap; gap: 14px; }
+.tg { position: relative; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
+.tg input { position: absolute; left: 0; top: 50%; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.tg span { width: 34px; height: 20px; border-radius: 99px; background: #2a3542; position: relative; transition: background .2s; flex: none; }
+.tg span::after { content: ''; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: #c9d3de; transition: transform .2s; }
+.tg input:checked + span { background: var(--accent); }
+.tg input:checked + span::after { transform: translateX(14px); background: #1b1500; }
+.screens { display: grid; grid-template-columns: 1.5fr 1fr; gap: 10px; align-items: end; }
+.screens figure { margin: 0; }
+.screens canvas { width: 100%; height: auto; display: block; border-radius: 6px; border: 1px solid var(--line); image-rendering: pixelated; }
+.screens figcaption { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.log { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-family: var(--font-mono); font-size: 11.5px; }
+.log li { background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; min-width: 0; }
+.log .meta { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-family: var(--font-ui); font-size: 12px; margin-bottom: 2px; }
+.log .from { font-weight: 600; }
+.log .topic { color: #cfe3ff; overflow-wrap: anywhere; }
+.log .pl { color: var(--accent); overflow-wrap: anywhere; }
+.legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 13px; color: var(--muted); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.lbl.dim { border: 1px dashed var(--accent); color: #ffe08a; background: rgba(27, 21, 0, 0.82); }
+.seg { display: flex; gap: 3px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; padding: 3px; }
+.seg button { flex: 1; border: 0; background: transparent; color: var(--muted); font: 600 13px var(--font-ui); padding: 7px 8px; border-radius: 6px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #1b1500; }
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.segrow { display: grid; grid-template-columns: 74px 1fr; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); }
+.segrow + .segrow { margin-top: 8px; }
+.guide summary { cursor: pointer; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); font-weight: 600; list-style: none; display: flex; justify-content: space-between; }
+.guide summary::-webkit-details-marker { display: none; }
+.guide summary::after { content: '+'; font-size: 16px; letter-spacing: 0; }
+.guide[open] summary::after { content: '–'; }
+.specs { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 7px 12px; font-size: 13px; margin: 10px 0 0; line-height: 1.35; }
+.specs dt { color: var(--ink); font-weight: 600; }
+.specs dd { margin: 0; color: var(--muted); }
+.specs dd b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px 12px; margin-top: 12px; font-size: 12px; color: var(--muted); }
+.swatches span { display: inline-flex; align-items: center; gap: 6px; }
+.swatches i { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.15); }
+.hud { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.hud div { background: rgba(15, 20, 25, 0.72); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px 4px; backdrop-filter: blur(4px); min-width: 64px; }
+.hud b { display: block; font-size: 20px; line-height: 1; font-variant-numeric: tabular-nums; }
+.hud span { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.hud .g b { color: var(--ok); } .hud .r b { color: var(--bad); } .hud .y b { color: var(--accent); } .hud .bl b { color: var(--info); }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand .logo { width: 40px; height: 40px; border-radius: 9px; background: #1d4ed8; display: grid; place-items: center; font: 700 26px var(--font-ui); color: #fff; box-shadow: inset 0 -4px 0 var(--accent); flex: none; }
+.views button.present { color: var(--accent); }
+.views button.present[aria-pressed="true"] { background: var(--accent); color: #1b1500; }
+.app.presenting { grid-template-columns: minmax(0, 1fr) 0; }
+.app.presenting .panel { display: none; }
+.err { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+
+@media (max-width: 900px) {
+  body { overflow: auto; }
+  .app { display: block; height: auto; }
+  .stage { height: 62vh; min-height: 380px; }
+  .panel { border-left: 0; border-top: 1px solid var(--line); overflow: visible; }
+  .title h1 { font-size: 22px; }
+  .title p { display: none; }
+  .hud div { padding: 4px 8px 3px; min-width: 0; }
+  .hud b { font-size: 16px; }
+  .brand .logo { width: 32px; height: 32px; font-size: 20px; }
+  .views { top: auto; bottom: 92px; right: 12px; }
+  .step { left: 12px; right: 12px; bottom: 12px; padding: 10px 12px; }
+  .step .t { font-size: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .tg span, .tg span::after, .btn { transition: none; } }
+</style>
+
+<div class="app">
+  <div class="stage">
+    <div id="scene" aria-label="Maqueta 3D del estacionamiento: arrastra para girar, rueda para acercar"></div>
+    <div class="labels" id="labels"></div>
+    <div class="title">
+      <div class="brand"><div class="logo" aria-hidden="true">P</div><div>
+      <div class="eyebrow">Universidad · Proyecto IoT</div>
+      <h1>Maqueta Smart Parking</h1></div></div>
+      <p>Dos ESP32 protegidos en casetas, seis cajones con sensor Hall y un panel en Node-RED, conectados por MQTT. Arrastra para girar la vista.</p>
+      <div class="hud" aria-live="off">
+        <div class="g"><b id="hLibres">–</b><span>Libres</span></div>
+        <div class="r"><b id="hOcup">–</b><span>Ocupados</span></div>
+        <div class="y"><b id="hAcc">0</b><span>Accesos</span></div>
+        <div class="r"><b id="hDen">0</b><span>Denegados</span></div>
+        <div class="bl"><b id="hMsg">0</b><span>Msgs MQTT</span></div>
+      </div>
+    </div>
+    <div class="views" role="group" aria-label="Vistas de cámara">
+      <button type="button" data-view="general" aria-pressed="true">General</button>
+      <button type="button" data-view="entrada" aria-pressed="false">Entrada</button>
+      <button type="button" data-view="cajones" aria-pressed="false">Cajones</button>
+      <button type="button" data-view="control" aria-pressed="false">Casetas</button>
+      <button type="button" data-view="red" aria-pressed="false">Red MQTT</button>
+      <button type="button" class="present" id="presentBtn" aria-pressed="false">▶ Presentación</button>
+    </div>
+    <div class="step" aria-live="polite">
+      <div class="n" id="stepN">·</div>
+      <div class="t" id="stepT">Estacionamiento listo. Tres cajones ocupados.<small id="stepS">Elige un tipo de usuario para que llegue un carro.</small></div>
+    </div>
+  </div>
+
+  <aside class="panel">
+    <section>
+      <h2>Llega un carro <span id="queue"></span></h2>
+      <div class="grid2">
+        <button class="btn" type="button" data-role="MAESTRO"><i class="dot" style="background:var(--maestro)"></i><div>Maestro<small>Cajones 1–2, o cualquiera</small></div></button>
+        <button class="btn" type="button" data-role="ALUMNO"><i class="dot" style="background:var(--alumno)"></i><div>Alumno<small>Cajones 3–4</small></div></button>
+        <button class="btn" type="button" data-role="HIBRIDO"><i class="dot" style="background:var(--hibrido)"></i><div>Híbrido<small>Cajones 5–6</small></div></button>
+        <button class="btn" type="button" data-role="DESCONOCIDO"><i class="dot" style="background:#94a3b8"></i><div>Tarjeta no registrada<small>Acceso denegado</small></div></button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Sale un carro</h2>
+      <div class="chips" id="exitChips"></div>
+    </section>
+
+    <section>
+      <h2>Apariencia</h2>
+      <div class="segrow"><span>Casetas</span>
+        <div class="seg" role="group" aria-label="Casetas"><button type="button" data-caseta="0" aria-pressed="true">Cerradas</button><button type="button" data-caseta="1" aria-pressed="false">Ver protoboards</button></div>
+      </div>
+      <div class="segrow"><span>Ambiente</span>
+        <div class="seg" role="group" aria-label="Ambiente"><button type="button" data-amb="0" aria-pressed="true">Día</button><button type="button" data-amb="1" aria-pressed="false">Noche</button></div>
+      </div>
+    </section>
+
+    <section>
+      <details class="guide" open>
+        <summary>Guía para armarla en físico</summary>
+        <dl class="specs">
+          <dt>Escala</dt><dd>1 unidad = <b>1 cm</b>. El ESP32 del modelo mide como el real (~5.5 × 2.8 cm).</dd>
+          <dt>Base</dt><dd>MDF de 6 mm, <b>78 × 50 cm</b>. Lote de asfalto <b>60 × 28.6 cm</b>, calle de <b>9 cm</b>.</dd>
+          <dt>Cajones</dt><dd>6 cajones de <b>7 × 11 cm</b>. Franja de color por tipo y tope amarillo de 3 cm al fondo.</dd>
+          <dt>Caseta acceso</dt><dd><b>7.4 × 9 cm</b>, <b>7 cm</b> de alto. Tapa el ESP32 con su expansor. Interior útil ≈ 6.8 × 8.4 cm.</dd>
+          <dt>Cuarto control</dt><dd><b>18 × 6.8 cm</b>, <b>7 cm</b> de alto. Tapa la protoboard del ESP32 de cajones (cabe una de 16.5 × 5.5 cm).</dd>
+          <dt>Techo</dt><dd>Suelto o con imanes, volado de 0.6 cm: se levanta para llegar a la protoboard, como en el botón <i>Ver protoboards</i>.</dd>
+          <dt>Cables</dt><dd>Ranura de <b>3 × 0.5 cm</b> abajo, al frente de cada caseta. Deja libre el USB.</dd>
+          <dt>Muros</dt><dd>Foamboard de 5 mm, ventanas de acetato, marcos con tiras de cartulina azul.</dd>
+          <dt>Pasto</dt><dd>Pasto sintético, fieltro verde o aserrín teñido.</dd>
+          <dt>Postes de luz</dt><dd>9 cm, popote negro o alambre. Opcional: LED blanco + 220 Ω al riel de 5 V (no usa pines del ESP32).</dd>
+          <dt>Árboles</dt><dd>5–7 cm: esponja verde sobre palillo de brocheta.</dd>
+          <dt>Plumas</dt><dd>Palito de paleta de 9 cm con franjas rojo/blanco, pegado al brazo del servo.</dd>
+          <dt>Boyas</dt><dd>Domos de <b>0.6 cm</b>: medias perlas o chinches doradas pintadas de amarillo. Dos filas antes y después del paso peatonal, una antes de cada pluma y una cada 5 cm en la línea central.</dd>
+          <dt>Letrero</dt><dd>Pórtico de <b>12 cm</b> de ancho y <b>12.8 cm</b> de alto sobre el carril de entrada. Caja de <b>10.2 × 5.4 cm</b> con el <b>LCD 16×2</b> (8 × 3.6 cm). Muestra los lugares libres desde la calle, antes de entrar.</dd>
+          <dt>Columna acceso</dt><dd><b>4.4 × 1.6 × 12 cm</b>, sobre un camellón de 2.6 × 4.4 cm del lado del conductor, a la altura de la ventana. Arriba: <b>OLED 0.96"</b> (cajón asignado) y <b>buzzer</b>; abajo: <b>RC522</b> en vertical (4 × 6 cm). Todo lo que el conductor necesita queda en un solo punto.</dd>
+          <dt>Columna salida</dt><dd><b>4.4 × 1.6 × 8.4 cm</b>, solo con el RC522.</dd>
+          <dt>Cableado</dt><dd>Haz perforaciones de 5 mm junto a cada poste y pasa los cables por debajo de la base hasta la caseta de acceso.</dd>
+          <dt>Marco LED</dt><dd>Contorno de cada cajón con tira LED delgada o pintura fluorescente verde. Luce mucho con la luz apagada.</dd>
+          <dt>Bandera</dt><dd>Mástil de 13 cm (palito de brocheta) con el logo del proyecto impreso.</dd>
+          <dt>Marco</dt><dd>Moldura de madera de 1 × 2.5 cm alrededor de la base, con la placa del proyecto al frente.</dd>
+          <dt>Carros</dt><dd>Escala 1:64 (tipo Hot Wheels) con un imán debajo para el sensor Hall.</dd>
+        </dl>
+        <div class="swatches">
+          <span><i style="background:#2c3037"></i>Asfalto</span>
+          <span><i style="background:#4d8a3b"></i>Pasto</span>
+          <span><i style="background:#efe6d2"></i>Caseta</span>
+          <span><i style="background:#dfe3e8"></i>Cuarto control</span>
+          <span><i style="background:#2f4f6f"></i>Marcos</span>
+          <span><i style="background:#f5b301"></i>Franja / topes</span>
+          <span><i style="background:#39404a"></i>Techos</span>
+        </div>
+      </details>
+    </section>
+
+    <section>
+      <h2>Desde Node-RED</h2>
+      <div class="grid2">
+        <button class="btn" type="button" data-cmd="entrada"><div>Abrir pluma de entrada<small>Publica …/entrada/cmd</small></div></button>
+        <button class="btn" type="button" data-cmd="salida"><div>Abrir pluma de salida<small>Publica …/salida/cmd</small></div></button>
+      </div>
+    </section>
+
+    <section>
+      <h2>Opciones</h2>
+      <div class="toggles">
+        <label class="tg"><input type="checkbox" id="tgAuto"><span></span>Demo automática</label>
+        <label class="tg"><input type="checkbox" id="tgLabels" checked><span></span>Etiquetas</label>
+        <label class="tg"><input type="checkbox" id="tgWires" checked><span></span>Cables</label>
+        <label class="tg"><input type="checkbox" id="tgDims"><span></span>Medidas</label>
+      </div>
+    </section>
+
+    <section>
+      <h2>Pantallas de la entrada</h2>
+      <div class="screens">
+        <figure><canvas id="lcdCanvas" width="512" height="150"></canvas><figcaption>LCD 16x2 · letrero del pórtico</figcaption></figure>
+        <figure><canvas id="oledCanvas" width="256" height="128"></canvas><figcaption>OLED · columna de acceso</figcaption></figure>
+      </div>
+    </section>
+
+    <section>
+      <h2>Mensajes MQTT <span>broker.hivemq.com</span></h2>
+      <div class="legend" style="margin-bottom:10px">
+        <span><i style="background:var(--ok)"></i>Cajón libre / ocupado</span>
+        <span><i style="background:var(--accent)"></i>Acceso y asignación</span>
+        <span><i style="background:#c4b5fd"></i>Plumas y sensores</span>
+        <span><i style="background:var(--info)"></i>Comando de Node-RED</span>
+      </div>
+      <ul class="log" id="log"></ul>
+    </section>
+  </aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+'use strict';
+const host = document.getElementById('scene');
+if (!window.THREE) { host.innerHTML = '<div class="err">No se pudo cargar la librería 3D. Revisa tu conexión y recarga la página.</div>'; return; }
+// Espera las fuentes para que las pantallas y el piso se dibujen con la letra correcta
+const fontsReady = document.fonts && document.fonts.load ? Promise.all([document.fonts.load('40px VT323'), document.fonts.load('700 40px "Saira Semi Condensed"')]).catch(() => {}) : Promise.resolve();
+Promise.race([fontsReady, new Promise(r => setTimeout(r, 2500))]).then(main);
+
+function main() {
+
+// ======================= DATOS DEL PROYECTO (igual que el firmware) =======================
+const ROLES = {
+  MAESTRO:     { uid: '4A CA F0 35', label: 'Maestro',     color: '#8b8cf8', letter: 'M' },
+  ALUMNO:      { uid: 'F4 D8 59 E5', label: 'Alumno',      color: '#38bdf8', letter: 'A' },
+  HIBRIDO:     { uid: 'A1 B2 C3 D4', label: 'Híbrido',     color: '#fb923c', letter: 'H' },
+  DESCONOCIDO: { uid: '7B 21 9E 04', label: 'Desconocido', color: '#94a3b8', letter: '?' }
+};
+const SLOT_ROLE = ['MAESTRO', 'MAESTRO', 'ALUMNO', 'ALUMNO', 'HIBRIDO', 'HIBRIDO'];
+const CAJONES = { MAESTRO: [1, 2], ALUMNO: [3, 4], HIBRIDO: [5, 6], TODOS: [1, 2, 3, 4, 5, 6] };
+const P = 'estacionamiento/esp32', PC = 'estacionamiento/cajones';
+const T_ESPERA = 6000;    // firmware: 15000 ms (acortado para la demo)
+const T_LIBRE = 1000, T_OLED = 6000;
+const SLOT_X = [-17.5, -10.5, -3.5, 3.5, 10.5, 17.5], SLOT_Z = -11.5;
+const ENT_X = -14, SAL_X = 14, FENCE_Z = 8.4;
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ======================= ESCENA =======================
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+host.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0f1419);
+scene.fog = new THREE.Fog(0x0f1419, 110, 220);
+const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 400);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.maxPolarAngle = Math.PI * 0.47; controls.minDistance = 14; controls.maxDistance = 150;
+
+const hemi = new THREE.HemisphereLight(0xdbe7ff, 0x2a2016, 0.55); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff3df, 1.15);
+sun.position.set(-30, 60, 35); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -50, right: 50, top: 40, bottom: -40, near: 10, far: 150 });
+scene.add(sun);
+const fill = new THREE.DirectionalLight(0x9fc0ff, 0.35); fill.position.set(40, 30, -30); scene.add(fill);
+
+const M = (color, o) => new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.8, metalness: 0.05 }, o || {}));
+function box(w, h, d, mat, x, y, z, parent) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  m.position.set(x || 0, y || 0, z || 0); m.castShadow = true; m.receiveShadow = true;
+  (parent || scene).add(m); return m;
+}
+function cyl(r, h, mat, x, y, z, parent, seg) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg || 20), mat);
+  m.position.set(x || 0, y || 0, z || 0); m.castShadow = true; m.receiveShadow = true;
+  (parent || scene).add(m); return m;
+}
+function canvasTex(cv) { const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; return t; }
+function makeCanvas(w, h, draw) { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); return c; }
+
+// ---- Texturas de material (asfalto, pasto, concreto) ----
+let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+function noiseCanvas(base, colors, n, s, extra) {
+  return makeCanvas(256, 256, (g, w, h) => {
+    g.fillStyle = base; g.fillRect(0, 0, w, h);
+    for (let i = 0; i < n; i++) { g.fillStyle = colors[i % colors.length]; const z = 0.6 + rnd() * s; g.fillRect(rnd() * w, rnd() * h, z, z); }
+    if (extra) extra(g, w, h);
+  });
+}
+function texMat(cv, rx, ry, o) {
+  const t = canvasTex(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry);
+  return M(0xffffff, Object.assign({ map: t, roughness: 0.95 }, o || {}));
+}
+const asphaltCv = noiseCanvas('#2c3037', ['rgba(255,255,255,0.06)', 'rgba(0,0,0,0.3)', 'rgba(150,150,160,0.08)'], 9000, 1.8);
+const grassCv = noiseCanvas('#4d8a3b', ['rgba(28,68,22,0.4)', 'rgba(150,200,95,0.28)', 'rgba(95,145,52,0.35)'], 16000, 2.2);
+const walkCv = noiseCanvas('#b9bdc2', ['rgba(0,0,0,0.07)', 'rgba(255,255,255,0.12)'], 5000, 1.6, (g, w, h) => {
+  g.strokeStyle = 'rgba(80,85,92,0.5)'; g.lineWidth = 3; g.strokeRect(0, 0, w, h);
+});
+
+// ---- Base de la maqueta (MDF) y asfalto ----
+box(78, 1.6, 50, M(0xa9845b, { roughness: 0.85 }), 0, -0.8, -3);
+box(60, 0.2, 28.6, texMat(asphaltCv, 6, 3), 0, 0.1, -5.9);                     // lote
+box(78, 0.2, 9, texMat(asphaltCv, 8, 1, { color: 0xeeeeee }), 0, 0.1, 13.4);   // calle
+const white = M(0xe9edf2, { roughness: 0.6 });
+for (let x = -36; x < 37; x += 5) if (Math.abs(x) > 3) box(2.6, 0.05, 0.25, white, x, 0.23, 13.4);   // línea central
+for (let i = 0; i < 6; i++) box(3.2, 0.05, 0.7, white, 0, 0.23, 9.75 + i * 1.45);                // paso peatonal
+for (let i = 0; i <= 6; i++) box(0.22, 0.05, 11, white, -21 + i * 7, 0.23, -11.5);       // líneas de cajón
+box(42.2, 0.05, 0.22, white, 0, 0.23, -17);
+
+// Número y tipo pintados en cada cajón
+const slotPaint = [];
+SLOT_X.forEach((x, i) => {
+  const r = ROLES[SLOT_ROLE[i]];
+  const cv = makeCanvas(256, 256, (g, w, h) => {
+    g.fillStyle = r.color; g.fillRect(0, 0, w, 34);
+    g.fillStyle = 'rgba(233,237,242,0.92)'; g.font = '700 150px "Saira Semi Condensed", sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(i + 1), w / 2, 140);
+    g.font = '600 34px "Saira Semi Condensed", sans-serif'; g.fillStyle = r.color; g.fillText(r.label.toUpperCase(), w / 2, 232);
+  });
+  const pl = new THREE.Mesh(new THREE.PlaneGeometry(5, 5), new THREE.MeshStandardMaterial({ map: canvasTex(cv), transparent: true, roughness: 0.9 }));
+  pl.rotation.x = -Math.PI / 2; pl.position.set(x, 0.24, -14.2); pl.receiveShadow = true; scene.add(pl);
+  slotPaint.push(cv);
+});
+function floorText(txt, x, z, rot) {
+  const cv = makeCanvas(512, 128, (g, w, h) => { g.fillStyle = 'rgba(245,179,1,0.9)'; g.font = '700 92px "Saira Semi Condensed", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, w / 2, h / 2); });
+  const pl = new THREE.Mesh(new THREE.PlaneGeometry(8, 2), new THREE.MeshStandardMaterial({ map: canvasTex(cv), transparent: true }));
+  pl.rotation.x = -Math.PI / 2; pl.rotation.z = rot || 0; pl.position.set(x, 0.24, z); scene.add(pl);
+}
+floorText('ENTRADA', ENT_X, 4.5, 0); floorText('SALIDA', SAL_X, 1.5, Math.PI);
+
+// Banqueta / cerca con huecos para entrada y salida
+const curb = M(0x9aa3ad, { roughness: 0.85 });
+[[-30, -19.4], [-8.6, 8.6], [19.4, 30]].forEach(([a, b]) => box(b - a, 0.7, 0.6, curb, (a + b) / 2, 0.45, FENCE_Z));
+box(0.6, 0.7, 28.6, curb, -30.3, 0.45, -5.9); box(0.6, 0.7, 28.6, curb, 30.3, 0.45, -5.9); box(61.2, 0.7, 0.6, curb, 0, 0.45, -20.5);
+
+// ======================= DECORACIÓN =======================
+// Pasto y banqueta alrededor del lote
+function grassPatch(x0, x1, z0, z1) { box(x1 - x0, 0.25, z1 - z0, texMat(grassCv, (x1 - x0) / 8, (z1 - z0) / 8), (x0 + x1) / 2, 0.125, (z0 + z1) / 2); }
+grassPatch(-39, -30.6, -28, 8.9); grassPatch(30.6, 39, -28, 8.9); grassPatch(-30.6, 30.6, -28, -20.8); grassPatch(-39, 39, 19.7, 22);
+box(78, 0.45, 1.8, texMat(walkCv, 39, 1), 0, 0.225, 18.8);                      // banqueta frontal
+
+// Flechas de circulación y topes de llanta
+function floorArrow(x, z) {
+  const cv = makeCanvas(256, 96, (g) => {
+    g.fillStyle = 'rgba(233,237,242,0.88)';
+    g.beginPath(); g.moveTo(10, 36); g.lineTo(170, 36); g.lineTo(170, 12); g.lineTo(246, 48); g.lineTo(170, 84); g.lineTo(170, 60); g.lineTo(10, 60); g.closePath(); g.fill();
+  });
+  const pl = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 1.65), new THREE.MeshStandardMaterial({ map: canvasTex(cv), transparent: true, roughness: 0.8 }));
+  pl.rotation.x = -Math.PI / 2; pl.position.set(x, 0.24, z); pl.receiveShadow = true; scene.add(pl);
+}
+floorArrow(-3, 1.6); floorArrow(5, 1.6);
+
+// Boyas viales (domos reductores de velocidad y reflejantes), una sola malla instanciada para no pesar
+const boyaPos = [];
+for (const bx of [-5.2, 5.2]) for (let z = 9.4; z <= 17.5; z += 0.82) { boyaPos.push([bx - 0.42, z]); boyaPos.push([bx + 0.42, z + 0.41]); }   // reductores junto al paso peatonal
+for (let x = -33.5; x < 37; x += 5) if (Math.abs(x) > 7) boyaPos.push([x, 13.4]);                                                    // línea central
+for (let x = -16.6; x <= -11.4; x += 0.87) boyaPos.push([x, 6.2]);                                                                  // antes de la pluma de entrada
+for (let x = 11.4; x <= 16.6; x += 0.87) boyaPos.push([x, 5.4]);                                                                    // antes de la pluma de salida
+for (let z = -4.5; z <= 4.5; z += 1.5) boyaPos.push([0.6, z]);                                                                       // reductor en el pasillo del lote
+const boyaMat = new THREE.MeshStandardMaterial({ color: 0xf5b301, metalness: 0.55, roughness: 0.3, emissive: 0xffc533, emissiveIntensity: 0.05 });
+const boyas = new THREE.InstancedMesh(new THREE.SphereGeometry(0.3, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2), boyaMat, boyaPos.length);
+const bm = new THREE.Matrix4(), bs = new THREE.Vector3(1, 0.65, 1), bq = new THREE.Quaternion();
+boyaPos.forEach(([x, z], i) => { bm.compose(new THREE.Vector3(x, 0.2, z), bq, bs); boyas.setMatrixAt(i, bm); });
+boyas.receiveShadow = true; scene.add(boyas);
+const amarillo = M(0xf5b301, { roughness: 0.6 });
+SLOT_X.forEach(x => box(3, 0.3, 0.42, amarillo, x, 0.35, -15.95));
+
+// Árboles (frondosos y pinos) y arbustos
+const trunkMat = M(0x6b4a2f, { roughness: 0.9 });
+const LEAF = [0x4c9a45, 0x5fae4f, 0x3f8a3e, 0x6fb35a].map(c => M(c, { flatShading: true, roughness: 0.85 }));
+const pineMat = M(0x2f6b3a, { flatShading: true, roughness: 0.85 });
+function tree(x, z, s, pino) {
+  const g = new THREE.Group(); g.position.set(x, 0.25, z); g.scale.setScalar(s); g.rotation.y = rnd() * 6; scene.add(g);
+  cyl(0.26, 2.6, trunkMat, 0, 1.3, 0, g, 7);
+  if (pino) {
+    [[2.1, 2.6, 2.6], [1.65, 2.2, 3.9], [1.1, 1.9, 5.0]].forEach(([r, h, y]) => { const c = new THREE.Mesh(new THREE.ConeGeometry(r, h, 7), pineMat); c.position.y = y; c.castShadow = true; g.add(c); });
+  } else {
+    const mat = LEAF[Math.floor(rnd() * LEAF.length)];
+    [[0, 3.7, 0, 1.75], [0.95, 3.15, 0.4, 1.2], [-0.85, 3.25, -0.3, 1.25], [0.1, 4.6, -0.2, 1.1]].forEach(([a, b, c, r]) => {
+      const m = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 0), mat); m.position.set(a, b, c); m.rotation.set(rnd() * 3, rnd() * 3, 0); m.castShadow = true; m.receiveShadow = true; g.add(m);
+    });
+  }
+}
+function bush(x, z, r) { const m = new THREE.Mesh(new THREE.IcosahedronGeometry(r || 0.75, 0), LEAF[Math.floor(rnd() * LEAF.length)]); m.position.set(x, 0.25 + (r || 0.75) * 0.6, z); m.scale.y = 0.75; m.castShadow = true; scene.add(m); }
+[[-34, 21, 0.9], [-10.5, 21, 0.85], [16, 21, 0.9, 1], [31, 21, 1],
+ [-37.2, -14, 0.85, 1], [-33, -17, 0.9], [-37, -21.5, 0.8, 1], [-33.5, -25, 1.05],
+ [36.5, 5.5, 0.9], [36.8, -14, 0.85, 1], [33.5, -18, 0.95], [36.5, -24.5, 1.05],
+ [-15, -25, 0.95, 1], [-23, -24.6, 1], [15, -25, 0.95, 1], [24, -24.6, 1]].forEach(([x, z, s, p]) => tree(x, z, s, !!p));
+[[-28.6, -22], [-26.8, -22.2], [27, -22.2], [28.8, -22], [-37.9, 6.6], [-35.9, 6.9], [-29, 21.1], [-12.6, 20.8], [-27.6, 20.5], [37.5, -6.5], [36.9, 0.5]].forEach(([x, z]) => bush(x, z, 0.6 + rnd() * 0.35));
+
+// Postes de luz (se encienden en modo noche)
+const poleMat = M(0x2b3038, { metalness: 0.5, roughness: 0.45 });
+const softGlow = canvasTex(makeCanvas(64, 64, (g) => { const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.4, 'rgba(255,255,255,0.35)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); }));
+const lamps = [];
+function lamp(x, z, rotY) {
+  const g = new THREE.Group(); g.position.set(x, 0.25, z); g.rotation.y = rotY; scene.add(g);
+  cyl(0.18, 0.5, poleMat, 0, 0.25, 0, g, 10);
+  cyl(0.12, 9, poleMat, 0, 4.5, 0, g, 10);
+  box(0.14, 0.14, 2.2, poleMat, 0, 8.95, 1.0, g);
+  box(0.7, 0.28, 1.25, poleMat, 0, 8.85, 2.05, g);
+  const headMat = new THREE.MeshStandardMaterial({ color: 0xfff4dc, emissive: 0xffd89a, emissiveIntensity: 0.1 });
+  const bulb = box(0.52, 0.06, 1.0, headMat, 0, 8.69, 2.05, g); bulb.castShadow = false;
+  const pool = new THREE.Mesh(new THREE.PlaneGeometry(11, 11), new THREE.MeshBasicMaterial({ map: softGlow, color: 0xffc977, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+  pool.rotation.x = -Math.PI / 2; pool.position.set(0, 0.03, 2.05); g.add(pool);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: softGlow, color: 0xffd59a, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+  glow.scale.set(4.5, 4.5, 1); glow.position.set(0, 8.5, 2.05); g.add(glow);
+  lamps.push({ headMat, pool, glow });
+}
+lamp(-31.8, 7.3, Math.PI / 2); lamp(-31.8, -12, Math.PI / 2); lamp(31.8, 3.5, -Math.PI / 2); lamp(31.8, -15, -Math.PI / 2);
+lamp(-6, 18.95, Math.PI); lamp(-19, -21.4, 0); lamp(19, -21.4, 0);
+
+// Señales de tránsito
+function signTex(draw) { return canvasTex(makeCanvas(128, 128, draw)); }
+const texE = signTex((g) => { g.fillStyle = '#fff'; g.beginPath(); g.roundRect ? g.roundRect(4, 4, 120, 120, 14) : g.rect(4, 4, 120, 120); g.fill(); g.fillStyle = '#1d4ed8'; g.fillRect(12, 12, 104, 104); g.fillStyle = '#fff'; g.font = '700 92px "Saira Semi Condensed", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('E', 64, 70); });
+const texAlto = signTex((g) => {
+  const oct = (r, c) => { g.fillStyle = c; g.beginPath(); for (let i = 0; i < 8; i++) { const a = Math.PI / 8 + i * Math.PI / 4; g.lineTo(64 + r * Math.cos(a), 64 + r * Math.sin(a)); } g.closePath(); g.fill(); };
+  oct(62, '#fff'); oct(55, '#d32f2f'); g.fillStyle = '#fff'; g.font = '700 38px "Saira Semi Condensed", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('ALTO', 64, 67);
+});
+const texVel = signTex((g) => { g.fillStyle = '#d32f2f'; g.beginPath(); g.arc(64, 64, 62, 0, 7); g.fill(); g.fillStyle = '#fff'; g.beginPath(); g.arc(64, 64, 50, 0, 7); g.fill(); g.fillStyle = '#111'; g.font = '700 54px "Saira Semi Condensed", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('10', 64, 56); g.font = '600 20px "Saira Semi Condensed", sans-serif'; g.fillText('km/h', 64, 92); });
+function signPost(x, z, rotY, tex, size, height) {
+  const g = new THREE.Group(); g.position.set(x, 0.25, z); g.rotation.y = rotY; scene.add(g);
+  cyl(0.09, height, M(0x8a939d, { metalness: 0.6, roughness: 0.4 }), 0, height / 2, 0, g, 8);
+  const front = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: 0.4, roughness: 0.5 }));
+  front.position.set(0, height, 0.12); front.castShadow = true; g.add(front);
+  const back = new THREE.Mesh(new THREE.PlaneGeometry(size, size), new THREE.MeshStandardMaterial({ map: tex, color: 0x000000, emissive: 0x6b7380, transparent: true, alphaTest: 0.4 }));
+  back.position.set(0, height, 0.1); back.rotation.y = Math.PI; g.add(back);
+}
+signPost(9.6, 7.6, Math.PI, texAlto, 1.9, 4.2);
+signPost(-29, -9, Math.PI / 2, texVel, 1.7, 4.2);
+
+// Letrero monumento, banca y bote de basura sobre el pasto frontal
+(function monumento() {
+  const stone = M(0x6b7380, { roughness: 0.8 });
+  box(14.4, 0.5, 1.7, stone, -20, 0.5, 20.9);
+  box(14, 1.9, 1.2, M(0x2f4f6f, { roughness: 0.6 }), -20, 1.7, 20.9);
+  const cv = makeCanvas(1024, 140, (g, w, h) => {
+    g.fillStyle = '#2f4f6f'; g.fillRect(0, 0, w, h); g.fillStyle = '#f5b301'; g.fillRect(0, h - 14, w, 14);
+    g.fillStyle = '#fff'; g.font = '700 58px "Saira Semi Condensed", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('ESTACIONAMIENTO UNIVERSITARIO', w / 2, 52);
+    g.fillStyle = '#c9d6e3'; g.font = '500 32px "Saira Semi Condensed", sans-serif'; g.fillText('Smart Parking · Proyecto IoT', w / 2, 104);
+  });
+  const pl = new THREE.Mesh(new THREE.PlaneGeometry(13.6, 1.86), new THREE.MeshStandardMaterial({ map: canvasTex(cv), roughness: 0.5 }));
+  pl.position.set(-20, 1.7, 21.51); scene.add(pl);
+  const wood = M(0x9a6a3e, { roughness: 0.7 }), iron = M(0x2b3038, { metalness: 0.5, roughness: 0.5 });
+  box(3.2, 0.18, 0.9, wood, 8, 1.0, 20.7); box(3.2, 0.7, 0.14, wood, 8, 1.55, 21.15);
+  box(0.14, 0.75, 0.85, iron, 6.7, 0.6, 20.75); box(0.14, 0.75, 0.85, iron, 9.3, 0.6, 20.75);
+  cyl(0.42, 1.1, M(0x2e7d4f, { roughness: 0.6 }), 10.8, 0.8, 20.8, null, 14);
+})();
+
+// Placa de la maqueta en el canto frontal de la base
+(function placa() {
+  const cv = makeCanvas(1024, 48, (g, w, h) => {
+    const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#e9c46a'); gr.addColorStop(1, '#b8892e');
+    g.fillStyle = gr; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#3a2a0a'; g.font = '700 28px "Saira Semi Condensed", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('SMART PARKING · ESP32 + RFID + SENSORES HALL + MQTT + NODE-RED', w / 2, h / 2 + 1);
+  });
+  const pl = new THREE.Mesh(new THREE.PlaneGeometry(32, 1.0), new THREE.MeshStandardMaterial({ map: canvasTex(cv), metalness: 0.5, roughness: 0.35 }));
+  pl.position.set(0, -0.55, 22.92); scene.add(pl);
+})();
+// Marco de madera alrededor de la base y luz de escenario debajo
+(function marco() {
+  const wood = M(0x5b3a21, { roughness: 0.6 });
+  box(80.8, 2.3, 0.9, wood, 0, -0.55, 22.45); box(80.8, 2.3, 0.9, wood, 0, -0.55, -28.45);
+  box(0.9, 2.3, 50, wood, -39.95, -0.55, -3); box(0.9, 2.3, 50, wood, 39.95, -0.55, -3);
+  const cv = makeCanvas(256, 256, (g) => { const r = g.createRadialGradient(128, 128, 0, 128, 128, 128); r.addColorStop(0, 'rgba(70,95,130,0.55)'); r.addColorStop(0.5, 'rgba(40,60,90,0.25)'); r.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = r; g.fillRect(0, 0, 256, 256); });
+  const st = new THREE.Mesh(new THREE.PlaneGeometry(190, 150), new THREE.MeshBasicMaterial({ map: canvasTex(cv), transparent: true, depthWrite: false }));
+  st.rotation.x = -Math.PI / 2; st.position.set(0, -1.75, -3); scene.add(st);
+  // Estrellas para el modo noche
+  const pts = []; for (let i = 0; i < 500; i++) { const a = rnd() * Math.PI * 2, e = 0.12 + rnd() * 1.2, r = 160; pts.push(Math.cos(a) * Math.cos(e) * r, Math.sin(e) * r, Math.sin(a) * Math.cos(e) * r); }
+  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  window.__stars = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xdfe8ff, size: 1.3, sizeAttenuation: true, transparent: true, opacity: 0, fog: false, depthWrite: false }));
+  scene.add(window.__stars);
+})();
+const stars = window.__stars;
+
+// Bandera del proyecto (ondea con el viento)
+const flag = (function () {
+  const g = new THREE.Group(); g.position.set(23.5, 0.25, 21); scene.add(g);
+  cyl(0.5, 0.4, M(0x6b7380), 0, 0.2, 0, g, 14);
+  cyl(0.1, 13, M(0xdfe3e8, { metalness: 0.6, roughness: 0.3 }), 0, 6.7, 0, g, 10);
+  const cv = makeCanvas(256, 160, (c, w, h) => {
+    c.fillStyle = '#1d4ed8'; c.fillRect(0, 0, w, h);
+    c.fillStyle = '#f5b301'; c.beginPath(); c.moveTo(0, h); c.lineTo(w * 0.32, h); c.lineTo(w * 0.62, 0); c.lineTo(w * 0.3, 0); c.closePath(); c.fill();
+    c.fillStyle = '#fff'; c.font = '700 92px "Saira Semi Condensed", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('P', w * 0.76, h * 0.46);
+    c.font = '600 20px "Saira Semi Condensed", sans-serif'; c.fillText('SMART PARKING', w * 0.74, h * 0.86);
+  });
+  const geo = new THREE.PlaneGeometry(4.6, 2.9, 24, 4); geo.translate(2.3, 0, 0);
+  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: canvasTex(cv), side: THREE.DoubleSide, roughness: 0.8 }));
+  mesh.position.set(0.1, 11.6, 0); mesh.castShadow = true; g.add(mesh);
+  const base = geo.attributes.position.array.slice();
+  return { geo, base };
+})();
+function waveFlag(t) {
+  const a = flag.geo.attributes.position.array, b = flag.base;
+  for (let i = 0; i < a.length; i += 3) { const x = b[i]; a[i + 2] = Math.sin(x * 1.5 - t * 0.0045) * 0.32 * (x / 4.6); a[i + 1] = b[i + 1] - x * 0.04; }
+  flag.geo.attributes.position.needsUpdate = true; flag.geo.computeVertexNormals();
+}
+
+// Peatones caminando por la banqueta
+const peds = [];
+function makePed(shirt, pants, x, z, dir, speed) {
+  const g = new THREE.Group(); g.position.set(x, 0.45, z); scene.add(g);
+  const pm = M(pants, { roughness: 0.8 }), sm = M(shirt, { roughness: 0.7 }), skin = M(0xc68b59, { roughness: 0.7 });
+  const legs = [-0.2, 0.2].map(lx => { const p = new THREE.Group(); p.position.set(lx, 1.1, 0); g.add(p); box(0.3, 1.1, 0.34, pm, 0, -0.55, 0, p); return p; });
+  box(0.85, 1.15, 0.48, sm, 0, 1.65, 0, g);
+  const arms = [-0.55, 0.55].map(ax => { const p = new THREE.Group(); p.position.set(ax, 2.15, 0); g.add(p); box(0.22, 0.95, 0.26, sm, 0, -0.45, 0, p); return p; });
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.33, 14, 10), skin); head.position.y = 2.6; head.castShadow = true; g.add(head);
+  box(0.62, 0.18, 0.62, M(0x2b2118), 0, 2.86, -0.02, g);
+  peds.push({ g, legs, arms, dir, speed, ph: rnd() * 6 });
+}
+makePed(0xe8590c, 0x1f2937, -30, 18.4, 1, 2.2); makePed(0x2f6fde, 0x374151, 6, 19.25, -1, 1.8); makePed(0x0f766e, 0x111827, 26, 18.45, -1, 2.0);
+function updatePeds(dt, t) {
+  peds.forEach(p => {
+    p.g.position.x += p.dir * p.speed * dt;
+    if (Math.abs(p.g.position.x) > 37) { p.dir *= -1; p.g.position.x = Math.sign(p.g.position.x) * 37; }
+    p.g.rotation.y = p.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+    const s = Math.sin(t * 0.0042 * p.speed + p.ph) * 0.5;
+    p.legs[0].rotation.x = s; p.legs[1].rotation.x = -s; p.arms[0].rotation.x = -s * 0.8; p.arms[1].rotation.x = s * 0.8;
+  });
+}
+
+// ======================= PLUMAS (servo + brazo + LEDs + Hall) =======================
+const stripeTex = canvasTex(makeCanvas(256, 16, (g) => { for (let i = 0; i < 8; i++) { g.fillStyle = i % 2 ? '#f4f4f4' : '#e53935'; g.fillRect(i * 32, 0, 32, 16); } }));
+const ledGeo = new THREE.SphereGeometry(0.32, 16, 12);
+function ledMesh(color, x, y, z, parent) {
+  const mat = new THREE.MeshStandardMaterial({ color: 0x222222, emissive: new THREE.Color(color), emissiveIntensity: 0.05, roughness: 0.3 });
+  const m = new THREE.Mesh(ledGeo, mat); m.position.set(x, y, z); (parent || scene).add(m);
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: softGlow, color, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+  halo.scale.set(2.2, 2.2, 1); m.add(halo);
+  m.userData.on = false; m.userData.color = color; m.userData.halo = halo; return m;
+}
+function setLed(m, on) {
+  if (m.userData.on === on) return;
+  m.userData.on = on; m.material.emissiveIntensity = on ? 2.4 : 0.05; m.material.color.set(on ? m.userData.color : 0x222222);
+  m.userData.halo.material.opacity = on ? 0.8 : 0;
+}
+function hallChip(x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0.25, z); scene.add(g);
+  box(0.9, 0.12, 0.6, M(0x111111), 0, 0, 0, g);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(0.7, 0.95, 32), new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = 0.08; g.add(ring); g.userData.ring = ring; return g;
+}
+function makeGate(name, postX, dir) {
+  const g = { name, postX, dir, laneX: postX + dir * 4.6, angle: 0, target: 0, estado: 'CERRADA', t: 0, visto: false, tHall: 0, hall: false };
+  const yellow = M(0xf5b301, { roughness: 0.5 });
+  box(1.2, 3.0, 1.2, yellow, postX, 1.5, FENCE_Z);
+  box(1.3, 1.6, 2.2, M(0x2563eb, { roughness: 0.5 }), postX, 2.5, FENCE_Z + 1.05);       // servo
+  const pivot = new THREE.Group(); pivot.position.set(postX, 2.6, FENCE_Z + 1.4); scene.add(pivot);
+  const arm = new THREE.Mesh(new THREE.BoxGeometry(9, 0.32, 0.32), new THREE.MeshStandardMaterial({ map: stripeTex, roughness: 0.5 }));
+  arm.position.x = dir * 4.5; arm.castShadow = true; pivot.add(arm);
+  g.pivot = pivot;
+  g.ledV = ledMesh(0x22c55e, postX, 3.35, FENCE_Z + 0.62); g.ledR = ledMesh(0xef4444, postX, 2.75, FENCE_Z + 0.62);
+  g.chip = hallChip(postX + dir * 4.6, FENCE_Z);
+  return g;
+}
+const gates = { entrada: makeGate('entrada', -18.6, 1), salida: makeGate('salida', 18.6, -1) };
+
+// ======================= ACCESO: PÓRTICO CON LCD + COLUMNAS CON OLED / RFID =======================
+// Lógica de la entrada (de afuera hacia adentro): 1) letrero LCD en el pórtico, visible desde la calle;
+// 2) columna del lado del conductor con OLED (cajón asignado), buzzer y lector RFID; 3) pluma.
+// Las piezas están a la medida real de los módulos (1 unidad = 1 cm).
+const lcdCanvas = document.getElementById('lcdCanvas');
+const oledCanvas = document.getElementById('oledCanvas');
+const lcdTex = canvasTex(lcdCanvas), oledTex = canvasTex(oledCanvas);
+const colMat = M(0x1c2530, { roughness: 0.5 }), frameMat = M(0x2f4f6f, { roughness: 0.55 });
+const coilTex = canvasTex(makeCanvas(170, 256, (g, w, h) => {
+  g.fillStyle = '#1f5fbf'; g.fillRect(0, 0, w, h); g.strokeStyle = '#d7e3f5'; g.lineWidth = 4;
+  for (let i = 0; i < 4; i++) g.strokeRect(18 + i * 12, 40 + i * 12, w - 36 - i * 24, h - 58 - i * 24);
+  g.fillStyle = '#c0c7d1'; for (let i = 0; i < 8; i++) g.fillRect(28 + i * 15, 10, 8, 10);
+  g.fillStyle = '#2b2f36'; g.fillRect(16, h - 16, 26, 10);
+}));
+function textPlate(txt, w, h, sub) {
+  const cv = makeCanvas(Math.round(w * 64), Math.round(h * 64), (g, W, H) => {
+    g.fillStyle = '#1c2530'; g.fillRect(0, 0, W, H);
+    const s = H * 0.78; g.fillStyle = '#1d4ed8'; g.fillRect(H * 0.11, H * 0.11, s, s); g.fillStyle = '#f5b301'; g.fillRect(H * 0.11, H * 0.11 + s * 0.84, s, s * 0.16);
+    g.fillStyle = '#fff'; g.font = '700 ' + Math.round(s * 0.8) + 'px "Saira Semi Condensed", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('P', H * 0.11 + s / 2, H * 0.11 + s * 0.46);
+    g.textAlign = 'left'; g.fillStyle = '#f5b301'; g.font = '700 ' + Math.round(H * (sub ? 0.4 : 0.52)) + 'px "Saira Semi Condensed", sans-serif';
+    g.fillText(txt, H * 1.05, sub ? H * 0.36 : H * 0.54);
+    if (sub) { g.fillStyle = '#c9d6e3'; g.font = '500 ' + Math.round(H * 0.26) + 'px "Saira Semi Condensed", sans-serif'; g.fillText(sub, H * 1.05, H * 0.74); }
+  });
+  return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map: canvasTex(cv), emissive: 0xffffff, emissiveMap: canvasTex(cv), emissiveIntensity: 0.25, roughness: 0.5 }));
+}
+function rfidPlate(g, y, zf) {   // RC522 en vertical: 4 × 6 cm
+  box(4.2, 6.3, 0.16, frameMat, 0, y, zf + 0.08, g);
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(3.9, 5.9, 0.1), [M(0x1f5fbf), M(0x1f5fbf), M(0x1f5fbf), M(0x1f5fbf), new THREE.MeshStandardMaterial({ map: coilTex, roughness: 0.5 }), M(0x1f5fbf)]);
+  plate.position.set(0, y, zf + 0.2); g.add(plate);
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 6.3), new THREE.MeshBasicMaterial({ color: 0xf5b301, transparent: true, opacity: 0, depthWrite: false }));
+  glow.position.set(0, y, zf + 0.27); g.add(glow);
+  return glow;
+}
+function island(x, z, w, d, y) {   // camellón de concreto con orilla amarilla
+  box(w + 0.2, 0.3, d + 0.2, amarillo, x, y + 0.15, z);
+  box(w, 0.4, d, texMat(walkCv, w / 2, d / 2), x, y + 0.2, z);
+}
+
+// 1) Pórtico de entrada con el letrero LCD 16×2 (mira hacia la calle)
+const portico = (function () {
+  const g = new THREE.Group(); g.position.set(-14, 0.2, 7.2); scene.add(g);
+  const steel = M(0x39404a, { metalness: 0.5, roughness: 0.4 });
+  box(0.7, 12.4, 0.7, steel, -5.6, 6.2, 0, g); box(0.7, 12.4, 0.7, steel, 5.6, 6.2, 0, g);
+  box(12, 0.8, 0.8, steel, 0, 12.4, 0, g);
+  box(10.2, 5.4, 1.0, colMat, 0, 9.3, 0, g);                       // caja del letrero
+  box(10.4, 0.35, 1.1, amarillo, 0, 12.0, 0, g);
+  const head = textPlate('LUGARES LIBRES', 9.6, 1.3); head.position.set(0, 11.1, 0.51); g.add(head);
+  box(8.0, 3.6, 0.14, M(0x1f7a3d), 0, 8.6, 0.5, g);                // PCB del LCD (8 × 3.6 cm, medida real)
+  box(7.1, 2.4, 0.1, M(0x111111), 0, 8.6, 0.6, g);                  // bisel negro
+  const lcd = new THREE.Mesh(new THREE.PlaneGeometry(6.6, 1.94), new THREE.MeshBasicMaterial({ map: lcdTex, toneMapped: false }));
+  lcd.position.set(0, 8.6, 0.66); g.add(lcd);
+  const back = textPlate('MÁX. 10 km/h', 9.6, 1.3, 'Respeta tu cajón asignado'); back.position.set(0, 9.3, -0.51); back.rotation.y = Math.PI; g.add(back);
+  return g;
+})();
+
+// 2) Columna de acceso del lado del conductor: OLED + buzzer + RFID
+island(-17.1, 12.4, 2.6, 4.4, 0.2);
+let kioskBuzzer;
+function makeColumn(x, z, rotY, h, title, conOled) {
+  const g = new THREE.Group(); g.position.set(x, 0.6, z); g.rotation.y = rotY; scene.add(g);
+  box(4.4, h, 1.6, colMat, 0, h / 2, 0, g);
+  box(4.6, 0.45, 1.8, amarillo, 0, h + 0.22, 0, g);
+  const t = textPlate(title, 4.1, 1.05); t.position.set(0, h - 0.75, 0.81); g.add(t);
+  let glowY = 3.7;
+  if (conOled) {
+    box(2.7, 2.8, 0.12, M(0x0e3d78), -0.65, h - 2.95, 0.84, g);   // PCB OLED 0.96" (2.7 × 2.8 cm)
+    const ol = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 1.15), new THREE.MeshBasicMaterial({ map: oledTex, toneMapped: false }));
+    ol.position.set(-0.65, h - 2.9, 0.91); g.add(ol);
+    const bz = cyl(0.6, 0.5, M(0x111111), 1.4, h - 2.95, 0.95, g, 18); bz.rotation.x = Math.PI / 2;   // buzzer
+    kioskBuzzer = bz;
+  }
+  const glow = rfidPlate(g, glowY, 0.8);
+  return { group: g, glow };
+}
+const readers = {
+  entrada: makeColumn(-17.3, 12.4, Math.PI / 2, 12, 'ACCESO', true),
+  salida: (island(17.1, 4.6, 2.6, 4.4, 0.2), makeColumn(17.3, 4.6, -Math.PI / 2, 8.4, 'SALIDA', false))
+};
+
+// ======================= ELECTRÓNICA =======================
+function esp32(parent, x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); parent.add(g);
+  box(2.8, 0.18, 5.6, M(0x16181c), 0, 0.09, 0, g);
+  box(1.8, 0.35, 2.0, M(0xb9c0c8, { metalness: 0.8, roughness: 0.3 }), 0, 0.35, -1.4, g);   // blindaje WROOM
+  box(1.9, 0.08, 0.8, M(0x16181c), 0, 0.22, -2.75, g);                                          // antena
+  box(0.8, 0.35, 0.6, M(0xb9c0c8, { metalness: 0.8 }), 0, 0.3, 2.55, g);                       // USB
+  const led = ledMesh(0xff3b30, 0.9, 0.28, 1.6, g); led.scale.setScalar(0.35); setLed(led, true);
+  return g;
+}
+const espAcceso = new THREE.Group(); espAcceso.position.set(-34.2, 0.36, 1); scene.add(espAcceso);
+box(5.2, 0.25, 6.4, M(0x0d0f12), 0, 0.12, 0, espAcceso);                       // expansor JEL
+box(1.6, 1.3, 1.6, M(0x121212), -1.6, 0.85, 2.6, espAcceso);                   // jack DC
+for (const sx of [-1.9, 1.9]) box(0.5, 0.9, 5.8, M(0x101010), sx, 0.55, 0, espAcceso);   // filas G-V-S
+esp32(espAcceso, 0, -0.1).position.y = 1.0;
+for (const sx of [-1.05, 1.05]) box(0.35, 0.8, 5.4, M(0x111111), sx, 0.65, -0.1, espAcceso);
+const fuente = box(3.2, 1.6, 4.6, M(0x1a1a1a, { roughness: 0.5 }), -34.2, 0.85, -8);
+const espCajones = new THREE.Group(); espCajones.position.set(0, 0.36, -23.6); scene.add(espCajones);
+box(16.5, 0.6, 5.5, M(0xeeeeea, { roughness: 0.6 }), 0, 0.3, 0, espCajones);   // protoboard de 830 puntos
+for (const rz of [-2.35, -1.95, 1.95, 2.35]) box(16, 0.02, 0.08, M(rz < 0 ? 0x3b82f6 : 0xef4444), 0, 0.61, rz, espCajones);   // rieles
+const ec = esp32(espCajones, 0, 0); ec.rotation.y = Math.PI / 2; ec.position.y = 0.6;
+const cargador = box(1.6, 1.2, 1.6, M(0xf2f2f2, { roughness: 0.4 }), 6.5, 1.0, -26.2);
+
+// ======================= CASETAS (tapan las protoboards; el techo se levanta) =======================
+const casetas = [];
+function makeCaseta(o) {
+  const c = { fade: [], fadeMeshes: [] };
+  const g = new THREE.Group(); g.position.set(o.x, 0, o.z); scene.add(g);
+  const P0 = 0.35, t = 0.3, w = o.w, d = o.d, h = o.h;
+  box(w + o.pad * 2, P0, d + o.pad * 2, texMat(walkCv, (w + o.pad * 2) / 3, (d + o.pad * 2) / 3), 0, P0 / 2, 0, g);   // firme de concreto
+  const fm = (col, extra) => { const m = M(col, extra); c.fade.push(m); return m; };
+  const fb = (w_, h_, d_, mat, x, y, z, parent) => { const m = box(w_, h_, d_, mat, x, y, z, parent || g); c.fadeMeshes.push(m); return m; };
+  const wall = fm(o.wall, { roughness: 0.75 }), trim = fm(o.trim, { roughness: 0.6 });
+  const glass = fm(0x24405a, { metalness: 0.3, roughness: 0.15, emissive: new THREE.Color(0xffcf86), emissiveIntensity: 0 });
+  c.glass = glass; c.fm = fm;
+  // Muros
+  fb(w, h, t, wall, 0, P0 + h / 2, d / 2 - t / 2); fb(w, h, t, wall, 0, P0 + h / 2, -d / 2 + t / 2);
+  fb(t, h, d - 2 * t, wall, -w / 2 + t / 2, P0 + h / 2, 0); fb(t, h, d - 2 * t, wall, w / 2 - t / 2, P0 + h / 2, 0);
+  // Zoclo y pilastras de las esquinas
+  fb(w + 0.12, 0.7, 0.12, trim, 0, P0 + 0.35, d / 2 + 0.06); fb(w + 0.12, 0.7, 0.12, trim, 0, P0 + 0.35, -d / 2 - 0.06);
+  fb(0.12, 0.7, d + 0.12, trim, -w / 2 - 0.06, P0 + 0.35, 0); fb(0.12, 0.7, d + 0.12, trim, w / 2 + 0.06, P0 + 0.35, 0);
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => fb(0.55, h, 0.55, trim, sx * w / 2, P0 + h / 2, sz * d / 2));
+  // Caras: front = hacia +z
+  function face(side, u) {
+    const s = new THREE.Group();
+    if (side === 'front') s.position.set(u, 0, d / 2);
+    else if (side === 'back') { s.position.set(-u, 0, -d / 2); s.rotation.y = Math.PI; }
+    else if (side === 'left') { s.position.set(-w / 2, 0, u); s.rotation.y = -Math.PI / 2; }
+    else { s.position.set(w / 2, 0, -u); s.rotation.y = Math.PI / 2; }
+    g.add(s); return s;
+  }
+  c.win = (side, u, y, ww, wh) => {
+    const s = face(side, u);
+    fb(ww, wh, 0.08, glass, 0, y, 0.03, s);
+    fb(ww + 0.3, 0.15, 0.14, trim, 0, y + wh / 2 + 0.07, 0.06, s);
+    fb(ww + 0.5, 0.16, 0.4, trim, 0, y - wh / 2 - 0.08, 0.16, s);
+    fb(0.15, wh, 0.14, trim, -ww / 2 - 0.07, y, 0.06, s); fb(0.15, wh, 0.14, trim, ww / 2 + 0.07, y, 0.06, s);
+    fb(0.08, wh, 0.1, trim, 0, y, 0.07, s);
+  };
+  c.door = (side, u, dw, dh, mat) => {
+    const s = face(side, u);
+    fb(dw, dh, 0.1, mat, 0, P0 + dh / 2, 0.04, s);
+    fb(dw + 0.3, 0.15, 0.14, trim, 0, P0 + dh + 0.07, 0.06, s);
+    const k = cyl(0.09, 0.22, fm(0xd4d8dd, { metalness: 0.8, roughness: 0.3 }), dw / 2 - 0.35, P0 + dh * 0.48, 0.16, s, 8); k.rotation.x = Math.PI / 2; c.fadeMeshes.push(k);
+  };
+  c.slot = (u, sw) => fb(sw, 0.5, 0.05, fm(0x0b0d10), u, P0 + 0.35, d / 2 + 0.15);   // ranura para cables
+  // Techo desmontable
+  const roof = new THREE.Group(); roof.position.set(0, P0 + h, 0); g.add(roof);
+  box(w + 1.3, 0.5, d + 1.3, M(o.roof, { roughness: 0.7 }), 0, 0.25, 0, roof);
+  box(w + 1.38, 0.2, d + 1.38, amarillo, 0, 0.2, 0, roof);
+  box(w + 0.4, 0.22, d + 0.4, M(0x4a5059, { roughness: 0.95 }), 0, 0.61, 0, roof);
+  const sw = o.signW;
+  box(sw, 1.3, 0.18, M(0x1c2530), 0, 1.37, d / 2 + 0.25, roof);
+  const scv = makeCanvas(Math.round(sw * 64), 72, (gg, W, H) => {
+    gg.fillStyle = '#1c2530'; gg.fillRect(0, 0, W, H); gg.fillStyle = '#f5b301'; gg.font = '700 46px "Saira Semi Condensed", sans-serif';
+    gg.textAlign = 'center'; gg.textBaseline = 'middle'; gg.fillText(o.sign, W / 2, H / 2 + 2);
+  });
+  const spl = new THREE.Mesh(new THREE.PlaneGeometry(sw - 0.2, 1.12), new THREE.MeshStandardMaterial({ map: canvasTex(scv), emissive: 0xffffff, emissiveMap: canvasTex(scv), emissiveIntensity: 0.15 }));
+  spl.position.set(0, 1.37, d / 2 + 0.35); roof.add(spl); c.signMat = spl.material;
+  cyl(0.05, 3.2, M(0x9aa3ad, { metalness: 0.7, roughness: 0.3 }), w / 2 - 0.9, 2.3, -d / 2 + 0.9, roof, 8);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 8), new THREE.MeshStandardMaterial({ color: 0x441111, emissive: 0xff2a2a, emissiveIntensity: 0.3 }));
+  tip.position.set(w / 2 - 0.9, 3.95, -d / 2 + 0.9); roof.add(tip); c.tip = tip.material;
+  c.roof = roof; c.roofY0 = P0 + h; c.group = g;
+  casetas.push(c); return c;
+}
+
+// Caseta de acceso: tapa el ESP32 de acceso con su expansor
+const caseta1 = makeCaseta({ x: -34.6, z: 0.6, w: 7.4, d: 9, h: 7, pad: 0.5, wall: 0xefe6d2, trim: 0x2f4f6f, roof: 0x39404a, sign: 'ACCESO', signW: 5.6 });
+caseta1.door('front', -2.15, 1.9, 4.6, caseta1.fm(0x3d6a8f, { roughness: 0.55 }));
+caseta1.win('front', 1.45, 4.55, 3.0, 2.4);
+caseta1.win('left', 0, 4.55, 5, 2.4); caseta1.win('right', 0, 4.55, 5, 2.4); caseta1.win('back', 0, 4.8, 3, 1.6);
+caseta1.slot(1.4, 3);
+const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.45, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x7a5200, emissive: 0xffa000, emissiveIntensity: 0.1, roughness: 0.3 }));
+beacon.position.set(-1.6, 0.72, -1.4); caseta1.roof.add(beacon);
+cyl(0.5, 0.2, M(0x222222), -1.6, 0.8, -1.4, caseta1.roof, 16).scale.y = 0.6;
+
+// Cuarto de control: tapa la protoboard del ESP32 de cajones
+const caseta2 = makeCaseta({ x: 0, z: -24.4, w: 18, d: 6.8, h: 7, pad: 0.2, wall: 0xdfe3e8, trim: 0x2f4f6f, roof: 0x39404a, sign: 'CUARTO DE CONTROL', signW: 10.5 });
+const rollCv = makeCanvas(128, 160, (g, w, h) => { g.fillStyle = '#9aa3ad'; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 10) { g.fillStyle = 'rgba(0,0,0,0.22)'; g.fillRect(0, y, w, 2); g.fillStyle = 'rgba(255,255,255,0.2)'; g.fillRect(0, y + 2, w, 1); } });
+caseta2.door('front', -5.4, 4.4, 5.2, caseta2.fm(0xffffff, { map: canvasTex(rollCv), metalness: 0.4, roughness: 0.45 }));
+caseta2.win('front', 1.8, 4.7, 3.4, 2.2); caseta2.win('front', 6.4, 4.7, 3.4, 2.2);
+caseta2.win('left', 0, 4.7, 3, 2); caseta2.win('right', 0, 4.7, 3, 2);
+caseta2.slot(0, 3.2);
+(function azotea(r) {
+  box(2.6, 1.2, 1.8, M(0xd5dade, { roughness: 0.5 }), -6, 1.32, -0.9, r);           // minisplit / clima
+  const fan = cyl(0.62, 0.06, M(0x2b3038), -6, 1.95, -0.9, r, 20);
+  const panelCv = makeCanvas(128, 96, (g, w, h) => { g.fillStyle = '#16305e'; g.fillRect(0, 0, w, h); g.strokeStyle = '#9fb7e0'; g.lineWidth = 2; for (let x = 0; x <= w; x += 21) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); } for (let y = 0; y <= h; y += 24) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); } });
+  [1.6, 5.0].forEach(x => {                                                         // paneles solares
+    const p = new THREE.Mesh(new THREE.BoxGeometry(3, 0.1, 2.2), [M(0x9aa3ad), M(0x9aa3ad), new THREE.MeshStandardMaterial({ map: canvasTex(panelCv), metalness: 0.5, roughness: 0.25 }), M(0x9aa3ad), M(0x9aa3ad), M(0x9aa3ad)]);
+    p.position.set(x, 1.25, 0.3); p.rotation.x = 0.38; p.castShadow = true; r.add(p);
+    box(0.15, 0.6, 0.15, poleMat, x, 0.95, -0.4, r);
+  });
+})(caseta2.roof);
+const casetaWalls = casetas.flatMap(c => c.fadeMeshes);
+
+// Cajones: poste con LED verde y rojo + chip Hall en el piso
+const frameTex = canvasTex(makeCanvas(128, 212, (g, w, h) => {
+  g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 14; g.strokeRect(10, 10, w - 20, h - 20);
+  g.strokeStyle = 'rgba(255,255,255,1)'; g.lineWidth = 4; g.strokeRect(10, 10, w - 20, h - 20);
+}));
+const slots = SLOT_X.map((x, i) => {
+  const post = box(0.5, 2.4, 0.5, M(0x3a434e), x + 2.6, 1.2, -16.6);
+  const ledV = ledMesh(0x22c55e, x + 2.6, 2.6, -16.3), ledR = ledMesh(0xef4444, x + 2.6, 2.0, -16.3);
+  const frame = new THREE.Mesh(new THREE.PlaneGeometry(6.3, 10.5), new THREE.MeshBasicMaterial({ map: frameTex, color: 0x22c55e, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending }));
+  frame.rotation.x = -Math.PI / 2; frame.position.set(x, 0.27, SLOT_Z); scene.add(frame);
+  return { n: i + 1, x, ledV, ledR, chip: hallChip(x, SLOT_Z), ocupado: false, post, frame };
+});
+function paintFrame(s) { s.frame.material.color.set(s.ocupado ? 0xef4444 : 0x22c55e); }
+
+function drawTotem() {   // actualiza los contadores de la pantalla
+  const libres = slots.filter(s => !s.ocupado).length;
+  document.getElementById('hLibres').textContent = libres; document.getElementById('hOcup').textContent = 6 - libres;
+}
+
+// Cables (tubos sobre la maqueta)
+const wires = new THREE.Group(); scene.add(wires);
+function wire(pts, color, r) {
+  const curve = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(p[0], p[1], p[2])), false, 'catmullrom', 0.05);
+  const m = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(24, pts.length * 14), r || 0.09, 6, false), M(color, { roughness: 0.6 }));
+  m.castShadow = true; wires.add(m); return m;
+}
+const y0 = 0.32;
+wire([[-34.2, 1.2, 3.8], [-34.2, y0, 5.5], [-31, y0, 6.6], [-20.1, y0, 6.6], [-19.8, 1.4, 7.0]], 0x2ecc71);         // I2C -> LCD del pórtico
+wire([[-33.9, 1.2, 3.8], [-33.8, y0, 5.8], [-31, y0, 7.0], [-20.6, y0, 7.0], [-20.6, y0, 10.6], [-18.6, y0, 12.0], [-17.4, 1.2, 12.0]], 0x2ecc71);   // I2C -> OLED de la columna
+wire([[-33.6, 1.2, 3.8], [-33.4, y0, 6.1], [-31, y0, 7.3], [-20.9, y0, 7.3], [-20.9, y0, 10.9], [-18.6, y0, 12.8], [-17.4, 1.2, 12.8]], 0x8e7cf0);   // RFID entrada (SPI)
+wire([[-33, 1.2, 3.8], [-32.6, y0, 6.4], [-30, y0, 9.1], [-18.6, y0, 9.1], [-18.6, 2.4, 9.5]], 0xf5b301);         // servo/LEDs entrada
+wire([[-32.6, 1.2, 3.8], [-32, y0, 6.8], [-29.6, y0, 9.35], [18.6, y0, 9.35], [18.6, 2.4, 9.5]], 0xf39c12);       // servo/LEDs salida
+wire([[-32.3, 1.2, 3.8], [-31.6, y0, 7.1], [-29.2, y0, 9.6], [20.2, y0, 9.6], [20.2, y0, 7.6], [18.6, y0, 4.6], [17.4, 1.2, 4.6]], 0x8e7cf0);  // RFID salida
+wire([[-34.2, 1.6, -5.7], [-34.2, y0, -4.5], [-35.8, y0, -1], [-35.8, y0, 3], [-35.8, 0.9, 3.6]], 0x111111, 0.16);   // fuente 9 V -> jack DC
+slots.forEach(s => {
+  const sx = -1.3 + s.n * 0.37;   // todos salen por la ranura del cuarto de control
+  wire([[-0.6 + s.n * 0.2, 1.1, -22.2], [sx, 0.55, -21.3], [sx * 1.6, y0 + 0.5, -20.5], [s.x + 2.4, y0, -19.6], [s.x + 2.6, y0, -17.2], [s.x + 2.6, 1.6, -16.8]], 0x22c55e, 0.07);
+  wire([[-0.6 + s.n * 0.2, 1.1, -22.2], [sx + 0.1, 0.5, -21.3], [sx * 1.6 + 0.15, y0 + 0.5, -20.5], [s.x + 2.2, y0, -19.3], [s.x + 2.2, y0, -16.0], [s.x + 1, y0, -12], [s.x, 0.3, SLOT_Z]], 0x3b82f6, 0.06);
+});
+wire([[6.5, 1.2, -25.4], [4.5, 0.6, -25], [1.8, 1.0, -24.3]], 0xf2f2f2, 0.1);   // USB del cargador
+
+// ======================= RED: BROKER Y NODE-RED =======================
+const broker = new THREE.Group(); broker.position.set(0, 21, -14); scene.add(broker);
+const cloudMat = new THREE.MeshStandardMaterial({ color: 0xdfe8f5, roughness: 0.9, emissive: 0x24364f, emissiveIntensity: 0.4 });
+[[0, 0, 0, 2.6], [2.6, -0.4, 0.2, 2], [-2.6, -0.5, 0, 1.9], [1.2, 1.4, -0.3, 1.8], [-1.3, 1.1, 0.2, 1.7]].forEach(([x, y, z, r]) => {
+  const s = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 18), cloudMat); s.position.set(x, y, z); broker.add(s);
+});
+const laptop = new THREE.Group(); laptop.position.set(34.3, 0.05, -6); laptop.rotation.y = -0.75; scene.add(laptop);
+box(6.2, 0.3, 4.2, M(0x9aa3ad, { metalness: 0.6, roughness: 0.35 }), 0, 0.15, 0, laptop);
+const lidG = new THREE.Group(); lidG.position.set(0, 0.3, -2.05); lidG.rotation.x = -0.28; laptop.add(lidG);
+box(6.2, 4.1, 0.18, M(0x9aa3ad, { metalness: 0.6, roughness: 0.35 }), 0, 2.05, -0.1, lidG);
+const nrCanvas = makeCanvas(512, 330, () => {});
+const nrTex = canvasTex(nrCanvas);
+const scr = new THREE.Mesh(new THREE.PlaneGeometry(5.8, 3.73), new THREE.MeshBasicMaterial({ map: nrTex, toneMapped: false }));
+scr.position.set(0, 2.05, 0.01); lidG.add(scr);
+
+const NODES = {
+  acceso: new THREE.Vector3(-34.2, 2.2, 1),
+  cajones: new THREE.Vector3(0, 2.2, -23.2),
+  broker: new THREE.Vector3(0, 19, -14),
+  nodered: new THREE.Vector3(33.4, 3.6, -7)
+};
+// Guías tenues de las conexiones WiFi
+[['acceso', 0x60a5fa], ['cajones', 0x60a5fa], ['nodered', 0x60a5fa]].forEach(([k, c]) => {
+  const curve = arc(NODES[k], NODES.broker);
+  const geo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(48));
+  const line = new THREE.Line(geo, new THREE.LineDashedMaterial({ color: c, dashSize: 0.6, gapSize: 0.5, transparent: true, opacity: 0.45 }));
+  line.computeLineDistances(); scene.add(line);
+});
+function arc(a, b) { const mid = a.clone().add(b).multiplyScalar(0.5); mid.y += 7; return new THREE.QuadraticBezierCurve3(a.clone(), mid, b.clone()); }
+
+// ======================= CARROS =======================
+const CAR_COLORS = [0xd94841, 0xf1f3f5, 0x2f6fde, 0x1f2937, 0xf5b301, 0x0f766e, 0xe8590c, 0x7c3aed, 0x94a3b8, 0x16a34a];
+let colorIdx = 0;
+function badgeTex(role) {
+  const r = ROLES[role];
+  return canvasTex(makeCanvas(128, 128, (g) => {
+    g.fillStyle = r.color; g.beginPath(); g.arc(64, 64, 56, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#0f1419'; g.font = '700 72px "Saira Semi Condensed", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(r.letter, 64, 70);
+  }));
+}
+function profileGeo(pts, depth, bevel) {
+  const sh = new THREE.Shape(); pts.forEach(([x, y], i) => i ? sh.lineTo(x, y) : sh.moveTo(x, y));
+  const geo = new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: !!bevel, bevelThickness: bevel || 0, bevelSize: bevel || 0, bevelSegments: 2, curveSegments: 4 });
+  geo.translate(0, 0, -depth / 2); geo.rotateY(-Math.PI / 2); return geo;
+}
+const CAR_GEO = {
+  sedan: { body: profileGeo([[-2.62, 0.42], [2.62, 0.42], [2.64, 1.02], [2.38, 1.32], [-2.4, 1.36], [-2.64, 1.16]], 2.56, 0.13),
+           cabin: profileGeo([[-1.6, 1.3], [1.3, 1.3], [0.55, 2.1], [-1.1, 2.1]], 2.44, 0.05), roofY: 2.16, roofZ: -0.27, roofL: 1.62, pillarZ: -0.25 },
+  suv:   { body: profileGeo([[-2.62, 0.5], [2.62, 0.5], [2.64, 1.14], [2.42, 1.48], [-2.54, 1.52], [-2.64, 1.34]], 2.66, 0.13),
+           cabin: profileGeo([[-2.42, 1.46], [1.35, 1.46], [0.78, 2.42], [-2.32, 2.42]], 2.54, 0.05), roofY: 2.48, roofZ: -0.78, roofL: 3.06, pillarZ: -0.55 }
+};
+const glassCar = M(0x18222e, { metalness: 0.7, roughness: 0.12 });
+const tireMat = M(0x141414, { roughness: 0.75 }), rimMat = M(0xc9ced6, { metalness: 0.85, roughness: 0.25 });
+const tireGeo = new THREE.CylinderGeometry(0.56, 0.56, 0.46, 18), rimGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.5, 12);
+const hlMat = new THREE.MeshStandardMaterial({ color: 0xfff7cc, emissive: 0xfff2b0, emissiveIntensity: 0.9 });
+const tlMat = new THREE.MeshStandardMaterial({ color: 0x7f1d1d, emissive: 0xdc2626, emissiveIntensity: 0.6 });
+const beamTex = canvasTex(makeCanvas(128, 128, (g) => { const r = g.createRadialGradient(64, 10, 0, 64, 40, 110); r.addColorStop(0, 'rgba(255,255,255,0.9)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.beginPath(); g.moveTo(44, 0); g.lineTo(84, 0); g.lineTo(128, 128); g.lineTo(0, 128); g.closePath(); g.fill(); }));
+function makeCar(role) {
+  const g = new THREE.Group();
+  const G = CAR_GEO[rnd() < 0.35 ? 'suv' : 'sedan'];
+  const paint = M(CAR_COLORS[colorIdx++ % CAR_COLORS.length], { metalness: 0.45, roughness: 0.28 });
+  const body = new THREE.Mesh(G.body, paint); body.castShadow = true; body.receiveShadow = true; g.add(body);
+  const cab = new THREE.Mesh(G.cabin, glassCar); cab.castShadow = true; g.add(cab);
+  box(2.5, 0.1, G.roofL, paint, 0, G.roofY, G.roofZ, g);
+  box(2.56, G.roofY - 1.36, 0.16, paint, 0, (G.roofY + 1.36) / 2, G.pillarZ, g);
+  [[-1.36, 1.7], [1.36, 1.7], [-1.36, -1.72], [1.36, -1.72]].forEach(([x, z]) => {
+    const t = new THREE.Mesh(tireGeo, tireMat); t.position.set(x, 0.56, z); t.rotation.z = Math.PI / 2; t.castShadow = true; g.add(t);
+    const r = new THREE.Mesh(rimGeo, rimMat); r.position.set(x, 0.56, z); r.rotation.z = Math.PI / 2; g.add(r);
+  });
+  box(0.62, 0.22, 0.08, hlMat, -0.82, 1.0, 2.8, g); box(0.62, 0.22, 0.08, hlMat, 0.82, 1.0, 2.8, g);
+  box(1.0, 0.22, 0.06, M(0x111111), 0, 0.72, 2.8, g);
+  box(0.62, 0.2, 0.08, tlMat, -0.85, 1.05, -2.8, g); box(0.62, 0.2, 0.08, tlMat, 0.85, 1.05, -2.8, g);
+  box(1.0, 0.3, 0.05, M(0xf2f2f2), 0, 0.72, -2.8, g);                                   // placa
+  const beam = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 6), new THREE.MeshBasicMaterial({ map: beamTex, color: 0xfff1c4, transparent: true, opacity: 0.4 * nightK, depthWrite: false, blending: THREE.AdditiveBlending }));
+  beam.rotation.x = -Math.PI / 2; beam.rotation.z = Math.PI; beam.position.set(0, 0.28, 5.7); g.add(beam);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: badgeTex(role), depthTest: false }));
+  sp.scale.set(1.5, 1.5, 1); sp.position.y = G.roofY + 1.3; g.add(sp);
+  scene.add(g);
+  return { group: g, role, slot: 0, moving: null, beam };
+}
+function placeCar(car, x, z, yaw) { car.group.position.set(x, 0, z); car.group.rotation.y = yaw; }
+const cars = [];
+
+// ======================= ESTADO, MQTT Y FIRMWARE EMULADO =======================
+const vistaAcceso = [false, false, false, false, false, false];   // lo que el ESP32 de acceso sabe por MQTT
+let oledHasta = 0, ultimo = null, contador = 0;
+const logEl = document.getElementById('log');
+const stats = { msg: 0, acc: 0, den: 0 }; const hMsg = document.getElementById('hMsg');
+const now = () => performance.now();
+const hora = () => new Date().toLocaleTimeString('es-MX', { hour12: false });
+
+function logMsg(from, topic, payload, kind) {
+  const li = document.createElement('li');
+  const color = { cajon: 'var(--ok)', acceso: 'var(--accent)', pluma: '#c4b5fd', cmd: 'var(--info)' }[kind];
+  li.innerHTML = '<div class="meta"><span class="from" style="color:' + color + '"></span><span></span></div><div class="topic"></div><div class="pl"></div>';
+  li.querySelector('.from').textContent = from + ' → broker';
+  li.querySelector('.meta span:last-child').textContent = hora();
+  li.querySelector('.topic').textContent = topic;
+  li.querySelector('.pl').textContent = payload;
+  logEl.prepend(li); stats.msg++; hMsg.textContent = stats.msg;
+  while (logEl.children.length > 30) logEl.lastChild.remove();
+}
+
+// Paquetes que viajan por la red
+const packets = [];
+const glowTex = canvasTex(makeCanvas(64, 64, (g) => { const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(0.35, 'rgba(255,255,255,0.6)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); }));
+function packet(from, to, color, onArrive) {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }));
+  sp.scale.set(1.8, 1.8, 1); scene.add(sp);
+  packets.push({ sp, curve: arc(NODES[from], NODES[to]), t: 0, dur: 1100, onArrive });
+}
+const KIND_COLOR = { cajon: 0x34d399, acceso: 0xf5b301, pluma: 0xc4b5fd, cmd: 0x60a5fa };
+// publish: el origen manda al broker; el broker reenvía a los suscriptores
+function publish(from, topic, payload, kind) {
+  logMsg(from === 'acceso' ? 'ESP32 acceso' : from === 'cajones' ? 'ESP32 cajones' : 'Node-RED', topic, payload, kind);
+  packet(from, 'broker', KIND_COLOR[kind], () => {
+    if (from !== 'nodered') packet('broker', 'nodered', KIND_COLOR[kind], () => drawNodeRed());
+    if (topic.startsWith(PC + '/') && from === 'cajones') {
+      packet('broker', 'acceso', KIND_COLOR[kind], () => {
+        const n = parseInt(topic.slice(PC.length + 1), 10);
+        vistaAcceso[n - 1] = payload === 'ocupado'; drawLCD();
+      });
+    }
+    if (topic.endsWith('/cmd')) packet('broker', 'acceso', KIND_COLOR[kind], () => onCmd(topic.split('/')[2]));
+  });
+}
+
+// ---- Pantallas (mismo contenido que el firmware) ----
+function libresEn(lista) { return lista.filter(n => !vistaAcceso[n - 1]).length; }
+function pad16(s) { return (s + '                ').slice(0, 16); }
+function drawLCD() {
+  const g = lcdCanvas.getContext('2d'), w = lcdCanvas.width, h = lcdCanvas.height;
+  const l1 = pad16('Libres: ' + libresEn(CAJONES.TODOS) + ' de 6');
+  const l2 = pad16('M:' + libresEn(CAJONES.MAESTRO) + '  A:' + libresEn(CAJONES.ALUMNO) + '  H:' + libresEn(CAJONES.HIBRIDO));
+  g.fillStyle = '#1640b8'; g.fillRect(0, 0, w, h);
+  const cw = (w - 28) / 16, ch = (h - 24) / 2;
+  g.font = Math.round(ch * 0.98) + 'px VT323, "Courier New", monospace'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  [l1, l2].forEach((line, r) => {
+    for (let c = 0; c < 16; c++) {
+      const x = 14 + c * cw, y = 12 + r * ch;
+      g.fillStyle = 'rgba(255,255,255,0.07)'; g.fillRect(x + 1.5, y + 3, cw - 3, ch - 6);
+      g.fillStyle = '#eef4ff'; g.fillText(line[c], x + cw / 2, y + ch / 2 + 2);
+    }
+  });
+  lcdTex.needsUpdate = true;
+  renderExitChips();
+}
+function oled(draw) {
+  const g = oledCanvas.getContext('2d');
+  g.fillStyle = '#02040a'; g.fillRect(0, 0, 256, 128); g.fillStyle = '#e8f6ff'; g.textBaseline = 'top';
+  draw(g); oledTex.needsUpdate = true;
+}
+const OF = (px) => px + 'px VT323, "Courier New", monospace';
+function oledEspera() { oled(g => { g.font = OF(22); g.fillText('ESTACIONAMIENTO', 22, 2); g.fillRect(0, 24, 256, 2); g.font = OF(46); g.fillText('Acerque', 20, 40); g.fillText('tarjeta', 20, 82); }); oledHasta = 0; }
+function oledCajon(rol, n) { oled(g => { g.font = OF(22); g.fillText('Hola, ' + rol, 2, 2); g.fillRect(0, 24, 256, 2); g.font = OF(46); g.fillText('CAJON', 4, 56); g.font = OF(108); g.fillText(String(n), 170, 30); }); oledHasta = now() + T_OLED; }
+function oledMsg(a, b) { oled(g => { g.font = OF(48); g.fillText(a, 4, 22); g.fillText(b, 4, 72); }); oledHasta = now() + T_OLED; }
+function drawNodeRed() {
+  const g = nrCanvas.getContext('2d'), w = 512, h = 330;
+  g.fillStyle = '#0b1220'; g.fillRect(0, 0, w, h);
+  const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, '#1d4ed8'); gr.addColorStop(1, '#172554');
+  g.fillStyle = gr; g.fillRect(12, 12, w - 24, 52);
+  g.fillStyle = '#fff'; g.font = '600 24px "Saira Semi Condensed", sans-serif'; g.fillText('Estacionamiento inteligente', 26, 46);
+  const libres = slots.filter(s => !s.ocupado).length;
+  g.fillStyle = '#111a2e'; g.fillRect(12, 76, 150, 92);
+  g.fillStyle = '#8e9bb6'; g.font = '16px "Saira Semi Condensed", sans-serif'; g.fillText('Cajones libres', 24, 100);
+  g.fillStyle = '#e6ebf5'; g.font = '700 44px "Saira Semi Condensed", sans-serif'; g.fillText(libres + ' / 6', 24, 150);
+  slots.forEach((s, i) => {
+    const x = 176 + (i % 3) * 108, y = 76 + Math.floor(i / 3) * 100;
+    g.fillStyle = s.ocupado ? 'rgba(239,68,68,0.28)' : 'rgba(34,197,94,0.22)'; g.fillRect(x, y, 98, 88);
+    g.fillStyle = s.ocupado ? '#f87171' : '#4ade80'; g.font = '700 36px "Saira Semi Condensed", sans-serif'; g.fillText(String(s.n), x + 10, y + 42);
+    g.font = '14px "Saira Semi Condensed", sans-serif'; g.fillText(s.ocupado ? 'OCUPADO' : 'LIBRE', x + 10, y + 74);
+  });
+  g.fillStyle = '#111a2e'; g.fillRect(12, 180, 150, 136);
+  g.fillStyle = '#8e9bb6'; g.font = '16px "Saira Semi Condensed", sans-serif'; g.fillText('Plumas', 24, 204);
+  ['entrada', 'salida'].forEach((k, i) => { const ab = gates[k].estado !== 'CERRADA'; g.fillStyle = ab ? '#4ade80' : '#f87171'; g.fillText((k === 'entrada' ? 'Entrada: ' : 'Salida: ') + (ab ? 'abierta' : 'cerrada'), 24, 236 + i * 28); });
+  g.fillStyle = '#8e9bb6'; g.fillText(ultimo ? 'Último: cajón ' + ultimo : 'Sin asignaciones', 24, 300);
+  nrTex.needsUpdate = true;
+}
+
+// ---- Sensores Hall (detectan el imán bajo cada carro) ----
+function carsNear(x, z, rx, rz) { return cars.some(c => Math.abs(c.group.position.x - x) < rx && Math.abs(c.group.position.z - z) < rz); }
+function pulse(chip, on) { chip.userData.ring.material.opacity = on ? 0.9 : 0; }
+function updateSensors(t) {
+  // Cajones: ESP32 de cajones
+  slots.forEach(s => {
+    const o = carsNear(s.x, SLOT_Z, 1.0, 1.0);
+    if (o !== s.ocupado) {
+      s.ocupado = o; setLed(s.ledV, !o); setLed(s.ledR, o); paintFrame(s); drawTotem(); pulse(s.chip, true); setTimeout(() => pulse(s.chip, false), 700);
+      publish('cajones', PC + '/' + s.n, o ? 'ocupado' : 'libre', 'cajon');
+      if (o) step(5, 'El sensor Hall del cajón ' + s.n + ' detecta el imán del carro', 'LED rojo encendido. El ESP32 de cajones publica "ocupado"; el LCD se actualiza al llegarle el mensaje.');
+    }
+  });
+  // Plumas: firmware del ESP32 de acceso
+  Object.values(gates).forEach(g => {
+    const h = carsNear(g.laneX, FENCE_Z, 2.2, 3.4);
+    if (h !== g.hall) { g.hall = h; pulse(g.chip, h); publish('acceso', P + '/' + g.name + '/vehiculo', h ? 'presente' : 'libre', 'pluma'); }
+    if (g.estado === 'ABIERTA') {
+      if (h) { g.visto = true; g.tHall = t; }
+      else if ((g.visto && t - g.tHall >= T_LIBRE) || (!g.visto && t - g.t >= T_ESPERA)) {
+        g.estado = 'BAJANDO'; g.t = t; g.target = 0; publish('acceso', P + '/' + g.name + '/pluma', 'cerrada', 'pluma'); drawNodeRed();
+      }
+    } else if (g.estado === 'BAJANDO') {
+      if (h) { g.estado = 'ABIERTA'; g.target = 1; g.t = t; g.tHall = t; g.visto = true; publish('acceso', P + '/' + g.name + '/pluma', 'abierta', 'pluma'); }
+      else if (t - g.t >= 600) { g.estado = 'CERRADA'; }
+    }
+    setLed(g.ledV, g.estado !== 'CERRADA'); setLed(g.ledR, g.estado === 'CERRADA');
+  });
+}
+function abrirPluma(g) {
+  g.estado = 'ABIERTA'; g.target = 1; g.t = now(); g.visto = false; g.tHall = now();
+  publish('acceso', P + '/' + g.name + '/pluma', 'abierta', 'pluma'); drawNodeRed();
+}
+function onCmd(puerta) {
+  const g = gates[puerta];
+  if (g.estado === 'CERRADA') {
+    publish('acceso', P + '/' + puerta + '/acceso', JSON.stringify({ uid: '-', rol: 'MANUAL', concedido: true }), 'acceso');
+    abrirPluma(g);
+    step(2, 'El ESP32 de acceso recibe "abrir" y levanta la pluma de ' + puerta, 'Si no pasa ningún carro, la pluma baja sola (en el firmware a los 15 s; aquí a los 6 s).');
+  }
+}
+function asignarCajon(rol) {
+  const lista = CAJONES[rol] || CAJONES.TODOS;
+  for (const n of lista) if (!vistaAcceso[n - 1]) return n;
+  if (rol === 'MAESTRO') for (const n of CAJONES.TODOS) if (!vistaAcceso[n - 1]) return n;
+  return 0;
+}
+
+// ======================= NARRACIÓN =======================
+const stepN = document.getElementById('stepN'), stepT = document.getElementById('stepT');
+function step(n, title, sub) { stepN.textContent = n; stepT.innerHTML = ''; stepT.append(title); const s = document.createElement('small'); s.textContent = sub || ''; stepT.append(s); }
+
+// ======================= MOVIMIENTO =======================
+const tweens = [];
+function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+function until(fn) { return new Promise(r => { const f = () => fn() ? r() : requestAnimationFrame(f); f(); }); }
+function drive(car, pts, opts) {
+  opts = opts || {};
+  const curve = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(p[0], 0, p[1])), false, 'centripetal');
+  const len = curve.getLength(), dur = Math.max(700, len / (opts.speed || 8) * 1000);
+  return new Promise(res => tweens.push({ car, curve, dur, t0: now(), reverse: !!opts.reverse, res }));
+}
+function ease(u) { return u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2; }
+function updateTweens(t) {
+  for (let i = tweens.length - 1; i >= 0; i--) {
+    const tw = tweens[i]; const u = Math.min(1, (t - tw.t0) / tw.dur), e = ease(u);
+    const p = tw.curve.getPointAt(e), d = tw.curve.getTangentAt(Math.min(0.999, Math.max(0.001, e)));
+    tw.car.group.position.set(p.x, 0, p.z);
+    const yaw = tw.reverse ? Math.atan2(-d.x, -d.z) : Math.atan2(d.x, d.z);
+    tw.car.group.rotation.y = yaw;
+    if (u >= 1) { tweens.splice(i, 1); tw.res(); }
+  }
+}
+function scan(reader) {
+  reader.glow.material.opacity = 0.85; setTimeout(() => { reader.glow.material.opacity = 0; }, 600);
+  kioskBuzzer.material.emissive = new THREE.Color(0xf5b301); setTimeout(() => { kioskBuzzer.material.emissive = new THREE.Color(0x000000); }, 400);
+}
+
+// ======================= ACCIONES =======================
+const queue = [];
+let busy = false;
+const queueEl = document.getElementById('queue');
+function enqueue(fn) { queue.push(fn); runQueue(); }
+async function runQueue() {
+  queueEl.textContent = queue.length ? queue.length + ' en espera' : '';
+  if (busy || !queue.length) return;
+  busy = true; const fn = queue.shift(); queueEl.textContent = queue.length ? queue.length + ' en espera' : '';
+  try { await fn(); } catch (e) { console.error(e); }
+  busy = false; lastIdle = now(); runQueue();
+}
+
+async function llegaCarro(role) {
+  const car = makeCar(role); cars.push(car);
+  placeCar(car, -44, 16.2, Math.PI / 2);
+  step(1, 'Llega un carro de ' + ROLES[role].label.toLowerCase(), 'Se detiene frente a la pluma de entrada.');
+  await drive(car, [[-44, 16.2], [-26, 16.2], [-18, 16.2], [-14.6, 15.2], [ENT_X, 12.7]], { speed: 10 });
+  await wait(300); scan(readers.entrada);
+  const r = ROLES[role];
+  const rolFw = role === 'DESCONOCIDO' ? null : role;
+  let cajon = rolFw ? asignarCajon(rolFw) : 0;
+  const concedido = !!(rolFw && cajon);
+  publish('acceso', P + '/entrada/acceso', JSON.stringify({ uid: r.uid, rol: rolFw || 'DESCONOCIDO', concedido }), 'acceso');
+  if (concedido) document.getElementById('hAcc').textContent = ++stats.acc; else document.getElementById('hDen').textContent = ++stats.den;
+  if (!concedido) {
+    if (rolFw) { oledMsg('SIN', 'CAJONES'); step(2, 'Tarjeta de ' + r.label.toLowerCase() + ' válida, pero no hay cajón libre para ese tipo', 'La OLED muestra "SIN CAJONES", suena el pitido de error y la pluma no se abre.'); }
+    else { oledMsg('ACCESO', 'DENEGADO'); step(2, 'Tarjeta no registrada: UID ' + r.uid, 'La OLED muestra "ACCESO DENEGADO" y la pluma no se abre.'); }
+    await wait(1800);
+    await drive(car, [[ENT_X, 12.7], [-14.1, 14.6], [-15.4, 16.3], [-19.5, 16.5]], { reverse: true, speed: 5 });
+    await drive(car, [[-19.5, 16.5], [-8, 16.2], [12, 15.6], [46, 15.4]], { speed: 11 });
+    removeCar(car); step('·', 'El carro se retira sin entrar', 'Prueba con otro tipo de usuario.');
+    return;
+  }
+  ultimo = cajon; car.slot = cajon;
+  oledCajon(rolFw, cajon);
+  publish('acceso', P + '/entrada/asignacion', JSON.stringify({ rol: rolFw, cajon }), 'acceso');
+  step(2, 'Tarjeta de ' + r.label.toLowerCase() + ' aceptada: se le asigna el cajón ' + cajon, 'El ESP32 de acceso elige el cajón con el estado que recibe por MQTT. La OLED muestra "CAJON ' + cajon + '".');
+  abrirPluma(gates.entrada);
+  await until(() => gates.entrada.angle > 0.92);
+  step(3, 'El servo levanta la pluma de entrada', 'El sensor Hall bajo la pluma la mantiene arriba mientras el carro pasa.');
+  const xc = SLOT_X[cajon - 1];
+  const path = [[ENT_X, 12.7], [ENT_X, 6], [ENT_X, 2.5]];
+  if (Math.abs(xc - ENT_X) < 6) path.push([xc, -2.5]);
+  else path.push([-10, 0.6], [xc - 4.5, 0.4], [xc - 0.4, -3.2]);
+  path.push([xc, -6.5], [xc, SLOT_Z]);
+  await drive(car, path, { speed: 8 });
+  await wait(1600);
+  step(6, 'Cajón ' + cajon + ' ocupado', 'El LCD de la entrada ya muestra ' + libresEn(CAJONES.TODOS) + ' libres y Node-RED pintó el cajón de rojo.');
+}
+
+async function saleCarro(n) {
+  const car = cars.find(c => c.slot === n && !c.leaving);
+  if (!car) return;
+  car.leaving = true;
+  const xc = SLOT_X[n - 1];
+  step(1, 'El carro del cajón ' + n + ' sale en reversa', 'Al alejarse del sensor Hall, el LED vuelve a verde y se publica "libre".');
+  await drive(car, [[xc, SLOT_Z], [xc, -6], [xc + (xc < SAL_X ? 1.5 : -1.5), -2.6]], { reverse: true, speed: 5 });
+  const p = car.group.position;
+  await drive(car, [[p.x, p.z], [xc < SAL_X ? xc - 1 : xc + 1, -0.6], [SAL_X - 3, 0.2], [SAL_X, 2.6], [SAL_X, 4.2]], { speed: 7 });
+  await wait(300); scan(readers.salida);
+  publish('acceso', P + '/salida/acceso', JSON.stringify({ uid: ROLES[car.role].uid, rol: car.role, concedido: true }), 'acceso');
+  step(3, 'Lectura en la salida: tarjeta de ' + ROLES[car.role].label.toLowerCase(), 'En la salida basta con que la tarjeta esté registrada.');
+  abrirPluma(gates.salida);
+  await until(() => gates.salida.angle > 0.92);
+  await drive(car, [[SAL_X, 4.2], [SAL_X, 9], [SAL_X + 1.5, 12.4], [20, 13.2], [46, 13.2]], { speed: 9 });
+  removeCar(car);
+  step(6, 'El carro salió y la pluma de salida bajó', 'Cajón ' + n + ' libre otra vez.');
+}
+function removeCar(car) { scene.remove(car.group); cars.splice(cars.indexOf(car), 1); }
+
+// ======================= UI =======================
+document.querySelectorAll('[data-role]').forEach(b => b.addEventListener('click', () => enqueue(() => llegaCarro(b.dataset.role))));
+document.querySelectorAll('[data-cmd]').forEach(b => b.addEventListener('click', () => {
+  const puerta = b.dataset.cmd;
+  publish('nodered', P + '/' + puerta + '/cmd', 'abrir', 'cmd');
+  step(1, 'Node-RED manda "abrir" a la pluma de ' + puerta, 'El mensaje va al broker y de ahí al ESP32 de acceso.');
+}));
+const exitChips = document.getElementById('exitChips');
+function renderExitChips() {
+  exitChips.innerHTML = '';
+  const parked = cars.filter(c => c.slot && !c.leaving).sort((a, b) => a.slot - b.slot);
+  if (!parked.length) { exitChips.innerHTML = '<span class="muted">No hay carros estacionados.</span>'; return; }
+  parked.forEach(c => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'chip';
+    b.innerHTML = '<i class="k" style="background:' + ROLES[c.role].color + '"></i>Cajón ' + c.slot;
+    b.addEventListener('click', () => { c.leaving = true; renderExitChips(); c.leaving = false; enqueue(() => saleCarro(c.slot)); });
+    exitChips.append(b);
+  });
+}
+const tgAuto = document.getElementById('tgAuto'), tgLabels = document.getElementById('tgLabels'), tgWires = document.getElementById('tgWires');
+tgAuto.checked = !reduce;
+const tgDims = document.getElementById('tgDims');
+
+// Casetas (abrir/cerrar) y ambiente (día/noche)
+let casetaK = 0, casetaTarget = 0, nightK = 0, nightTarget = 0;
+function segPress(sel, val) { document.querySelectorAll(sel).forEach(b => b.setAttribute('aria-pressed', String(b === val))); }
+document.querySelectorAll('[data-caseta]').forEach(b => b.addEventListener('click', () => {
+  segPress('[data-caseta]', b); casetaTarget = +b.dataset.caseta;
+  if (reduce) casetaK = casetaTarget;
+  if (casetaTarget) step('·', 'Techos levantados: así se ven las protoboards dentro de las casetas', 'En la maqueta física el techo va suelto o con imanes para poder abrirlo.');
+  else step('·', 'Casetas cerradas', 'Así se ve la maqueta terminada: la electrónica queda oculta y solo salen los cables por la ranura.');
+}));
+document.querySelectorAll('[data-amb]').forEach(b => b.addEventListener('click', () => { segPress('[data-amb]', b); nightTarget = +b.dataset.amb; if (reduce) nightK = nightTarget; }));
+const C_DAY = { bg: new THREE.Color(0x0f1419), sun: new THREE.Color(0xfff3df) }, C_NIGHT = { bg: new THREE.Color(0x05070c), sun: new THREE.Color(0x8fa6ff) };
+let lastNight = -1, lastCaseta = -1;
+function updateAmbience(t, dt) {
+  casetaK += Math.sign(casetaTarget - casetaK) * Math.min(Math.abs(casetaTarget - casetaK), dt * 1.4);
+  nightK += Math.sign(nightTarget - nightK) * Math.min(Math.abs(nightTarget - nightK), dt * 1.2);
+  if (casetaK !== lastCaseta) {
+    lastCaseta = casetaK; const e = ease(casetaK);
+    casetas.forEach(c => {
+      c.roof.position.y = c.roofY0 + e * 7.5; c.roof.rotation.z = e * 0.12;
+      c.fade.forEach(m => { m.opacity = 1 - 0.84 * e; m.transparent = e > 0.001; m.depthWrite = e < 0.5; });
+    });
+    casetaWalls.forEach(m => { m.castShadow = e < 0.5; });
+  }
+  if (nightK !== lastNight) {
+    lastNight = nightK; const k = nightK;
+    hemi.intensity = 0.55 - 0.38 * k; sun.intensity = 1.15 - 1.0 * k; fill.intensity = 0.35 - 0.2 * k;
+    sun.color.copy(C_DAY.sun).lerp(C_NIGHT.sun, k);
+    scene.background.copy(C_DAY.bg).lerp(C_NIGHT.bg, k); scene.fog.color.copy(scene.background);
+    lamps.forEach(l => { l.pool.material.opacity = 0.85 * k; l.headMat.emissiveIntensity = 0.1 + 2.4 * k; l.glow.material.opacity = 0.85 * k; });
+    casetas.forEach(c => { c.glass.emissiveIntensity = 0.95 * k; c.signMat.emissiveIntensity = 0.15 + 0.9 * k; });
+    stars.material.opacity = k; boyaMat.emissiveIntensity = 0.05 + 0.9 * k; slots.forEach(s => { s.frame.material.opacity = 0.6 + 0.35 * k; });
+    cars.forEach(c => { c.beam.material.opacity = 0.4 * k; });
+  }
+  cars.forEach(c => { if (c.beam.material.opacity !== 0.4 * nightK) c.beam.material.opacity = 0.4 * nightK; });
+  const abierta = gates.entrada.estado !== 'CERRADA' || gates.salida.estado !== 'CERRADA';
+  beacon.material.emissiveIntensity = abierta ? 0.6 + 2.2 * Math.max(0, Math.sin(t * 0.012)) : 0.1;
+  const blink = Math.sin(t * 0.004) > 0.55 ? 2.6 : 0.25;
+  casetas.forEach(c => { c.tip.emissiveIntensity = blink; });
+}
+tgWires.addEventListener('change', () => { wires.visible = tgWires.checked; });
+let lastIdle = now();
+function autoDemo(t) {
+  if (!tgAuto.checked || busy || queue.length || t - lastIdle < 2500) return;
+  lastIdle = t;
+  const parked = cars.filter(c => c.slot);
+  const libres = slots.filter(s => !s.ocupado).length;
+  if (parked.length && (libres <= 1 || Math.random() < 0.38)) { const c = parked[Math.floor(Math.random() * parked.length)]; enqueue(() => saleCarro(c.slot)); return; }
+  const r = Math.random();
+  enqueue(() => llegaCarro(r < 0.08 ? 'DESCONOCIDO' : r < 0.4 ? 'MAESTRO' : r < 0.72 ? 'ALUMNO' : 'HIBRIDO'));
+}
+
+// Etiquetas sobre la escena
+const labelsEl = document.getElementById('labels');
+const LABELS = [
+  ['Caseta de acceso · ESP32 + expansor', new THREE.Vector3(-34.6, 10.2, 0.6), 'hw'],
+  ['Fuente 9 V / 4 A', new THREE.Vector3(-34.2, 2.6, -8), 'hw'],
+  ['Base 78 × 50 cm', new THREE.Vector3(0, 0.6, 22), 'dim'],
+  ['Cajón 7 × 11 cm', new THREE.Vector3(-3.5, 0.8, -7), 'dim'],
+  ['Caseta 7.4 × 9 × 7 cm', new THREE.Vector3(-34.6, 8.2, 5.1), 'dim'],
+  ['Cuarto de control 18 × 6.8 × 7 cm', new THREE.Vector3(0, 8.2, -21), 'dim'],
+  ['Calle 9 cm', new THREE.Vector3(-30, 0.6, 13.4), 'dim'],
+  ['Pluma 9 cm', new THREE.Vector3(-11, 3.4, 9.8), 'dim'],
+  ['Pórtico 12 × 12.8 cm', new THREE.Vector3(-8.4, 7, 7.2), 'dim'],
+  ['Columna 4.4 × 1.6 × 12 cm', new THREE.Vector3(-17.3, 7, 14.8), 'dim'],
+  ['Boyas Ø 0.6 cm', new THREE.Vector3(-5.2, 0.8, 16.5), 'dim'],
+  ['Poste 9 cm', new THREE.Vector3(-6, 9.6, 18.9), 'dim'],
+  ['Árbol 5–7 cm', new THREE.Vector3(31, 6.8, 21), 'dim'],
+  ['Lote 60 × 28.6 cm', new THREE.Vector3(22, 0.6, -2), 'dim'],
+  ['Letrero: LCD 16×2', new THREE.Vector3(-14, 13.6, 7.2), 'hw'],
+  ['Columna: OLED + buzzer + RFID', new THREE.Vector3(-17.3, 13.8, 12.4), 'hw'],
+  ['Servo + pluma', new THREE.Vector3(-18.6, 4.4, 9.4), 'hw'],
+  ['Columna de salida: RFID', new THREE.Vector3(17.3, 10.2, 4.6), 'hw'],
+  ['Cuarto de control · ESP32 de cajones', new THREE.Vector3(0, 10.6, -24.4), 'hw'],
+  ['Sensor Hall + LEDs', new THREE.Vector3(SLOT_X[5] + 2.6, 3.4, -16.6), 'hw'],
+  ['Broker MQTT', new THREE.Vector3(0, 25.2, -14), 'net'],
+  ['Node-RED', new THREE.Vector3(34.3, 5.6, -7.2), 'net']
+].map(([txt, pos, cls]) => { const d = document.createElement('div'); d.className = 'lbl ' + cls; d.textContent = txt; labelsEl.append(d); return { d, pos, cls }; });
+const tmpV = new THREE.Vector3();
+function updateLabels() {
+  const showHw = tgLabels.checked, showDim = tgDims.checked;
+  labelsEl.hidden = !showHw && !showDim;
+  if (labelsEl.hidden) return;
+  const w = host.clientWidth, h = host.clientHeight;
+  LABELS.forEach(l => {
+    tmpV.copy(l.pos).project(camera);
+    const vis = (l.cls === 'dim' ? showDim : showHw) && tmpV.z < 1 && Math.abs(tmpV.x) < 1.05 && Math.abs(tmpV.y) < 1.05;
+    if (vis !== l.vis) { l.d.style.display = vis ? '' : 'none'; l.vis = vis; }
+    if (vis) l.d.style.transform = 'translate3d(' + ((tmpV.x + 1) / 2 * w).toFixed(1) + 'px,' + ((1 - tmpV.y) / 2 * h - 10).toFixed(1) + 'px,0) translate(-50%,-100%)';
+  });
+}
+
+// Modo presentación: oculta el panel, gira la cámara y recorre las vistas
+const presentBtn = document.getElementById('presentBtn'), appEl = document.querySelector('.app');
+const TOUR = ['general', 'entrada', 'cajones', 'control', 'red'];
+let presenting = false, presentT = 0, presentIdx = 0;
+function setCasetas(v) { casetaTarget = v; if (reduce) casetaK = v; document.querySelectorAll('[data-caseta]').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.caseta === v))); }
+function setPresent(on) {
+  presenting = on; presentBtn.setAttribute('aria-pressed', String(on)); presentBtn.textContent = on ? '■ Salir' : '▶ Presentación';
+  appEl.classList.toggle('presenting', on); resize();
+  controls.autoRotate = on && !reduce; controls.autoRotateSpeed = 0.45;
+  if (on) { tgAuto.checked = true; presentIdx = 0; presentT = now(); setView('general'); }
+  else setCasetas(0);
+}
+presentBtn.addEventListener('click', () => setPresent(!presenting));
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && presenting) setPresent(false); });
+function updatePresent(t) {
+  if (!presenting || t - presentT < 10000) return;
+  presentT = t; presentIdx = (presentIdx + 1) % TOUR.length;
+  setView(TOUR[presentIdx]); setCasetas(TOUR[presentIdx] === 'control' ? 1 : 0);
+}
+
+// Vistas de cámara
+const VIEWS = {
+  general: { pos: [0, 50, 68], tgt: [0, 2, -3] },
+  entrada: { pos: [4, 16, 34], tgt: [-16, 6, 9] },
+  cajones: { pos: [4, 22, 10], tgt: [0, 0, -15] },
+  control: { pos: [22, 40, 30], tgt: [-16, 3, -10] },
+  red: { pos: [30, 30, 46], tgt: [0, 10, -8] }
+};
+let camTween = null;
+function setView(name, instant) {
+  const v = VIEWS[name];
+  document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === name)));
+  // Aleja la cámara en pantallas angostas para que quepa toda la maqueta
+  const tgt = new THREE.Vector3().fromArray(v.tgt);
+  const k = (name === 'general' || name === 'red' || name === 'control') ? Math.max(1, 1.45 / camera.aspect) : Math.max(1, 1.1 / camera.aspect);
+  const pos = new THREE.Vector3().fromArray(v.pos).sub(tgt).multiplyScalar(k).add(tgt);
+  if (instant || reduce) { camera.position.copy(pos); controls.target.copy(tgt); return; }
+  camTween = { p0: camera.position.clone(), t0: controls.target.clone(), p1: pos, t1: tgt, s: now(), d: 1100 };
+}
+document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+
+function resize() {
+  const w = host.clientWidth, h = host.clientHeight;
+  renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+
+// ======================= ESTADO INICIAL =======================
+[1, 3, 4].forEach(n => { const role = SLOT_ROLE[n - 1]; const c = makeCar(role); c.slot = n; cars.push(c); placeCar(c, SLOT_X[n - 1], SLOT_Z, Math.PI); });
+slots.forEach(s => { s.ocupado = carsNear(s.x, SLOT_Z, 1, 1); setLed(s.ledV, !s.ocupado); setLed(s.ledR, s.ocupado); paintFrame(s); vistaAcceso[s.n - 1] = s.ocupado; });
+Object.values(gates).forEach(g => { setLed(g.ledR, true); });
+
+function start() {
+  drawLCD(); oledEspera(); drawNodeRed(); drawTotem(); resize(); setView('general', true);
+  let last = now();
+  renderer.setAnimationLoop(() => {
+    const t = now(), dt = Math.min(0.05, (t - last) / 1000); last = t;
+    updateTweens(t); updateSensors(t);
+    Object.values(gates).forEach(g => { g.angle += Math.sign(g.target - g.angle) * Math.min(Math.abs(g.target - g.angle), dt * 1.6); g.pivot.rotation.z = g.dir * g.angle * 1.4; });
+    for (let i = packets.length - 1; i >= 0; i--) {
+      const k = packets[i]; k.t += dt * 1000; const u = Math.min(1, k.t / k.dur);
+      k.sp.position.copy(k.curve.getPoint(u));
+      if (u >= 1) { scene.remove(k.sp); packets.splice(i, 1); k.onArrive && k.onArrive(); }
+    }
+    if (oledHasta && t > oledHasta) oledEspera();
+    if (camTween) {
+      const u = Math.min(1, (t - camTween.s) / camTween.d), e = ease(u);
+      camera.position.lerpVectors(camTween.p0, camTween.p1, e); controls.target.lerpVectors(camTween.t0, camTween.t1, e);
+      if (u >= 1) camTween = null;
+    }
+    autoDemo(t); updateAmbience(t, dt); updatePeds(dt, t); waveFlag(t); updatePresent(t);
+    controls.update(); renderer.render(scene, camera); updateLabels();
+  });
+}
+start();
+}
+})();
+</script>
+
+</body></html>
